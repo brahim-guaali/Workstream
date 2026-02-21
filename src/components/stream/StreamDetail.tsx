@@ -93,7 +93,7 @@ export function StreamDetail({
   };
 
   const handleDelete = async () => {
-    if (!confirm('Delete this slice and all its branches? This cannot be undone.')) return;
+    if (!confirm('Delete this stream and all its branches? This cannot be undone.')) return;
     setIsDeleting(true);
     try {
       await onDeleteStream();

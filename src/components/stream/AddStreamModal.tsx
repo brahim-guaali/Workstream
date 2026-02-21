@@ -60,7 +60,7 @@ export function AddStreamModal({
 
   const flatStreams = flattenStreams(streams);
   const parentOptions = [
-    { value: '', label: 'No parent (root slice)' },
+    { value: '', label: 'No parent (root stream)' },
     ...flatStreams.map((s) => ({
       value: s.id,
       label: `${'  '.repeat(s.depth)}${s.title}`,
@@ -87,8 +87,8 @@ export function AddStreamModal({
       resetForm();
       onClose();
     } catch (err) {
-      console.error('Failed to create slice:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create slice. Check Firestore rules.');
+      console.error('Failed to create stream:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create stream. Check Firestore rules.');
     } finally {
       setIsSubmitting(false);
     }
@@ -108,14 +108,14 @@ export function AddStreamModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Add Slice">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Add Stream">
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           id="stream-title"
           label="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="What's this slice about?"
+          placeholder="What's this stream about?"
           autoFocus
         />
         <Textarea
@@ -136,7 +136,7 @@ export function AddStreamModal({
           />
           <Select
             id="parent-stream"
-            label="Parent Slice"
+            label="Parent Stream"
             value={parentStreamId || ''}
             onChange={(e) => setParentStreamId(e.target.value || null)}
             options={parentOptions}
@@ -148,7 +148,7 @@ export function AddStreamModal({
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Creating...' : 'Create Slice'}
+            {isSubmitting ? 'Creating...' : 'Create Stream'}
           </Button>
         </div>
       </form>

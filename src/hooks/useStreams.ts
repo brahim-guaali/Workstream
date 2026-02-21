@@ -159,38 +159,36 @@ export function useStreams(projectId: string | undefined) {
     // No-op - using real-time listener
   }, []);
 
+  type ExportedStream = {
+    id: string;
+    title: string;
+    description: string | null;
+    status: StreamStatus;
+    source_type: SourceType;
+    created_at: string;
+    position_x?: number;
+    position_y?: number;
+    events: Array<{
+      type: string;
+      content: string;
+      metadata: Record<string, unknown> | null;
+      created_at: string;
+    }>;
+    children: ExportedStream[];
+  };
+
   const exportProject = useCallback(async () => {
     if (!user || !projectId) throw new Error('Not authenticated');
 
-    // Get all streams with their events
-    const exportData: {
-      version: number;
-      exportedAt: string;
-      slices: Array<{
-        id: string;
-        title: string;
-        description: string | null;
-        status: StreamStatus;
-        source_type: SourceType;
-        parent_slice_id: string | null;
-        created_at: string;
-        position_x?: number;
-        position_y?: number;
-        events: Array<{
-          type: string;
-          content: string;
-          metadata: Record<string, unknown> | null;
-          created_at: string;
-        }>;
-      }>;
-    } = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      slices: [],
-    };
+    // Fetch events for all streams
+    const streamEventsMap = new Map<string, Array<{
+      type: string;
+      content: string;
+      metadata: Record<string, unknown> | null;
+      created_at: string;
+    }>>();
 
     for (const stream of streams) {
-      // Fetch events for this stream
       const eventsRef = collection(
         db,
         'users',
@@ -211,70 +209,80 @@ export function useStreams(projectId: string | undefined) {
           created_at: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
         };
       });
-
-      exportData.slices.push({
-        id: stream.id,
-        title: stream.title,
-        description: stream.description,
-        status: stream.status,
-        source_type: stream.source_type,
-        parent_slice_id: stream.parent_stream_id,
-        created_at: stream.created_at,
-        position_x: stream.position_x,
-        position_y: stream.position_y,
-        events,
-      });
+      streamEventsMap.set(stream.id, events);
     }
 
-    return exportData;
+    // Build nested tree structure
+    const buildExportTree = (parentId: string | null): ExportedStream[] => {
+      return streams
+        .filter((s) => s.parent_stream_id === parentId)
+        .map((stream) => ({
+          id: stream.id,
+          title: stream.title,
+          description: stream.description,
+          status: stream.status,
+          source_type: stream.source_type,
+          created_at: stream.created_at,
+          position_x: stream.position_x,
+          position_y: stream.position_y,
+          events: streamEventsMap.get(stream.id) || [],
+          children: buildExportTree(stream.id),
+        }));
+    };
+
+    return {
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      streams: buildExportTree(null),
+    };
   }, [user, projectId, streams]);
+
+  type ImportedStream = {
+    id: string;
+    title: string;
+    description: string | null;
+    status: StreamStatus;
+    source_type: SourceType;
+    created_at: string;
+    position_x?: number;
+    position_y?: number;
+    events: Array<{
+      type: string;
+      content: string;
+      metadata: Record<string, unknown> | null;
+      created_at: string;
+    }>;
+    children: ImportedStream[];
+  };
 
   const importProject = useCallback(
     async (data: {
       version: number;
-      slices: Array<{
-        id: string;
-        title: string;
-        description: string | null;
-        status: StreamStatus;
-        source_type: SourceType;
-        parent_slice_id: string | null;
-        created_at: string;
-        position_x?: number;
-        position_y?: number;
-        events: Array<{
-          type: string;
-          content: string;
-          metadata: Record<string, unknown> | null;
-          created_at: string;
-        }>;
-      }>;
+      streams: ImportedStream[];
     }) => {
       if (!user || !projectId) throw new Error('Not authenticated');
 
-      // Map old IDs to new IDs
-      const idMap = new Map<string, string>();
-
-      // First pass: create all slices without parent references
-      for (const slice of data.slices) {
+      // Recursively import streams with their children
+      const importStreamWithChildren = async (
+        stream: ImportedStream,
+        parentStreamId: string | null
+      ) => {
         const streamsRef = collection(db, 'users', user.uid, 'projects', projectId, 'streams');
         const docRef = await addDoc(streamsRef, {
-          title: slice.title,
-          description: slice.description,
-          status: slice.status,
-          sourceType: slice.source_type,
-          parentStreamId: null, // Set later
+          title: stream.title,
+          description: stream.description,
+          status: stream.status,
+          sourceType: stream.source_type,
+          parentStreamId,
           branchedFromEventId: null,
-          createdAt: Timestamp.fromDate(new Date(slice.created_at)),
+          createdAt: Timestamp.fromDate(new Date(stream.created_at)),
           updatedAt: serverTimestamp(),
-          positionX: slice.position_x,
-          positionY: slice.position_y,
+          positionX: stream.position_x,
+          positionY: stream.position_y,
         });
 
-        idMap.set(slice.id, docRef.id);
-
-        // Create events for this slice
-        for (const event of slice.events) {
+        // Create events for this stream
+        for (const event of stream.events) {
           const eventsRef = collection(
             db,
             'users',
@@ -292,18 +300,16 @@ export function useStreams(projectId: string | undefined) {
             createdAt: Timestamp.fromDate(new Date(event.created_at)),
           });
         }
-      }
 
-      // Second pass: update parent references
-      for (const slice of data.slices) {
-        if (slice.parent_slice_id) {
-          const newId = idMap.get(slice.id);
-          const newParentId = idMap.get(slice.parent_slice_id);
-          if (newId && newParentId) {
-            const streamRef = doc(db, 'users', user.uid, 'projects', projectId, 'streams', newId);
-            await updateDoc(streamRef, { parentStreamId: newParentId });
-          }
+        // Import children with this stream as parent
+        for (const child of stream.children) {
+          await importStreamWithChildren(child, docRef.id);
         }
+      };
+
+      // Import all root streams
+      for (const stream of data.streams) {
+        await importStreamWithChildren(stream, null);
       }
     },
     [user, projectId]

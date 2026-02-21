@@ -20,7 +20,7 @@ export function SignIn() {
             Workstream
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mb-8">
-            Track your project's evolution with slices
+            Track your project's evolution with streams
           </p>
           <Button onClick={signIn} className="w-full">
             Sign in with Google

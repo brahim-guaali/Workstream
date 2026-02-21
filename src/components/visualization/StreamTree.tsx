@@ -518,7 +518,7 @@ export function StreamTree({
               .attr('dominant-baseline', 'middle')
               .attr('font-size', '12px')
               .attr('fill', '#3b82f6')
-              .text('New Slice...');
+              .text('New Stream...');
           })
           .on('drag', (event) => {
             event.sourceEvent.preventDefault();
@@ -621,7 +621,7 @@ export function StreamTree({
           .attr('dominant-baseline', 'middle')
           .attr('font-size', '12px')
           .attr('fill', '#3b82f6')
-          .text('New Slice...');
+          .text('New Stream...');
       }
     }
 

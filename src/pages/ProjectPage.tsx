@@ -130,7 +130,7 @@ export function ProjectPage() {
       const text = await file.text();
       const data = JSON.parse(text);
 
-      if (!data.version || !data.slices) {
+      if (!data.version || !data.streams) {
         throw new Error('Invalid project file format');
       }
 
@@ -187,7 +187,7 @@ export function ProjectPage() {
             </Button>
             <Button onClick={handleOpenAddModal}>
               <Plus className="w-4 h-4 mr-2" />
-              Add Slice
+              Add Stream
             </Button>
           </div>
         </div>
@@ -202,14 +202,14 @@ export function ProjectPage() {
                   <Plus className="w-8 h-8 text-slate-400" />
                 </div>
                 <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
-                  No slices yet
+                  No streams yet
                 </h3>
                 <p className="text-slate-500 dark:text-slate-400 mb-4 max-w-sm">
-                  Start by creating your first slice to track your project's evolution
+                  Start by creating your first stream to track your project's evolution
                 </p>
                 <Button onClick={handleOpenAddModal}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Create First Slice
+                  Create First Stream
                 </Button>
               </div>
             ) : (
