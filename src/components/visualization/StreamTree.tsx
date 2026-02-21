@@ -145,6 +145,10 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         0%, 100% { opacity: 1; }
         50% { opacity: 0.6; }
       }
+      @keyframes stream-flow {
+        0% { stroke-dashoffset: 12; }
+        100% { stroke-dashoffset: 0; }
+      }
       .active-badge {
         animation: pulse 2s ease-in-out infinite;
       }
@@ -163,6 +167,10 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       }
       .link-faded {
         opacity: 0.15;
+      }
+      .link-stream {
+        stroke-dasharray: 8, 4;
+        animation: stream-flow 0.4s linear infinite;
       }
     `);
 
@@ -198,12 +206,13 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       const targetX = targetAdjusted.x;
       const targetY = targetAdjusted.y + targetNode.height / 2;
 
-      // Fade links that don't connect focused nodes
-      const isLinkFocused = !selectedStreamId ||
-        (focusedNodeIds.has(link.sourceId) && focusedNodeIds.has(link.targetId));
+      // Check if link connects focused nodes (part of ancestor chain)
+      const isLinkInAncestorChain = selectedStreamId &&
+        focusedNodeIds.has(link.sourceId) && focusedNodeIds.has(link.targetId);
+      const isLinkFocused = !selectedStreamId || isLinkInAncestorChain;
 
       g.append('path')
-        .attr('class', `link link-source-${link.sourceId} link-target-${link.targetId}${!isLinkFocused ? ' link-faded' : ''}`)
+        .attr('class', `link link-source-${link.sourceId} link-target-${link.targetId}${!isLinkFocused ? ' link-faded' : ''}${isLinkInAncestorChain ? ' link-stream' : ''}`)
         .attr('data-source', link.sourceId)
         .attr('data-target', link.targetId)
         .attr('d', linkGenerator({
@@ -211,8 +220,8 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           target: [targetX, targetY],
         }))
         .attr('fill', 'none')
-        .attr('stroke', '#94a3b8')
-        .attr('stroke-width', 2);
+        .attr('stroke', isLinkInAncestorChain ? '#3b82f6' : '#94a3b8')
+        .attr('stroke-width', isLinkInAncestorChain ? 3 : 2);
     });
 
     // Draw nodes
