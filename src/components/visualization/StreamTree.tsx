@@ -789,6 +789,15 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
     };
     svgEl.addEventListener('wheel', handleWheel, { passive: false });
 
+    // Any click disables free pan
+    const handleClick = () => {
+      if (freePan) {
+        setFreePan(false);
+        lastMousePos.current = null;
+      }
+    };
+    svgEl.addEventListener('mousedown', handleClick);
+
     // Free-pan: move canvas by moving the mouse (no click needed)
     const handleMouseMove = (e: MouseEvent) => {
       if (!freePan) return;
@@ -865,6 +874,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
 
     return () => {
       svgEl.removeEventListener('wheel', handleWheel);
+      svgEl.removeEventListener('mousedown', handleClick);
       svgEl.removeEventListener('mousemove', handleMouseMove);
       svgEl.removeEventListener('mouseleave', handleMouseLeave);
     };
