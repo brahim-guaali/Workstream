@@ -18,6 +18,7 @@ export function ProjectPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [branchFromStreamId, setBranchFromStreamId] = useState<string | null>(null);
   const [newSlicePosition, setNewSlicePosition] = useState<{ x: number; y: number } | null>(null);
+  const [pendingSlice, setPendingSlice] = useState<{ parentId: string; position: { x: number; y: number } } | null>(null);
 
   const { events, loading: eventsLoading, createEvent } = useEvents(projectId, selectedStream?.id);
 
@@ -56,6 +57,7 @@ export function ProjectPage() {
 
     setBranchFromStreamId(null);
     setNewSlicePosition(null);
+    setPendingSlice(null);
   };
 
   const handleUpdateStream = async (updates: Partial<StreamWithChildren>) => {
@@ -93,6 +95,7 @@ export function ProjectPage() {
   const handleCreateChildSlice = useCallback((parentId: string, position: { x: number; y: number }) => {
     setBranchFromStreamId(parentId);
     setNewSlicePosition(position);
+    setPendingSlice({ parentId, position });
     setIsAddModalOpen(true);
   }, []);
 
@@ -216,6 +219,7 @@ export function ProjectPage() {
                 onSelectStream={handleSelectStream}
                 onUpdateStreamPosition={handleUpdateStreamPosition}
                 onCreateChildSlice={handleCreateChildSlice}
+                pendingSlice={pendingSlice}
               />
             )}
           </div>
@@ -244,6 +248,7 @@ export function ProjectPage() {
           setIsAddModalOpen(false);
           setBranchFromStreamId(null);
           setNewSlicePosition(null);
+          setPendingSlice(null);
         }}
         onSubmit={handleCreateStream}
         streams={streamTree}

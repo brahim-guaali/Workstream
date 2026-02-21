@@ -31,6 +31,7 @@ interface StreamTreeProps {
   onSelectStream: (stream: StreamWithChildren) => void;
   onUpdateStreamPosition?: (id: string, x: number, y: number) => Promise<void>;
   onCreateChildSlice?: (parentId: string, position: { x: number; y: number }) => void;
+  pendingSlice?: { parentId: string; position: { x: number; y: number } } | null;
 }
 
 export function StreamTree({
@@ -39,6 +40,7 @@ export function StreamTree({
   onSelectStream,
   onUpdateStreamPosition,
   onCreateChildSlice,
+  pendingSlice,
 }: StreamTreeProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -465,6 +467,9 @@ export function StreamTree({
         let connectionStartY = 0;
         let releasePosition = { x: 0, y: 0 };
 
+        const placeholderWidth = 200;
+        const placeholderHeight = 80;
+
         const handleDrag = d3.drag<SVGCircleElement, unknown>()
           .on('start', (event) => {
             event.sourceEvent.stopPropagation();
@@ -487,6 +492,33 @@ export function StreamTree({
               .attr('stroke', '#3b82f6')
               .attr('stroke-width', 2)
               .attr('stroke-dasharray', '5,5');
+
+            // Create placeholder box
+            const placeholderGroup = mainGroup
+              .append('g')
+              .attr('class', 'temp-placeholder')
+              .attr('transform', `translate(${connectionStartX}, ${connectionStartY - placeholderHeight / 2})`);
+
+            placeholderGroup
+              .append('rect')
+              .attr('width', placeholderWidth)
+              .attr('height', placeholderHeight)
+              .attr('rx', 8)
+              .attr('fill', '#eff6ff')
+              .attr('stroke', '#3b82f6')
+              .attr('stroke-width', 2)
+              .attr('stroke-dasharray', '5,5')
+              .attr('opacity', 0.7);
+
+            placeholderGroup
+              .append('text')
+              .attr('x', placeholderWidth / 2)
+              .attr('y', placeholderHeight / 2)
+              .attr('text-anchor', 'middle')
+              .attr('dominant-baseline', 'middle')
+              .attr('font-size', '12px')
+              .attr('fill', '#3b82f6')
+              .text('New Slice...');
           })
           .on('drag', (event) => {
             event.sourceEvent.preventDefault();
@@ -499,19 +531,24 @@ export function StreamTree({
             const mouseX = (event.sourceEvent.clientX - svgRect.left - pan.x) / zoom;
             const mouseY = (event.sourceEvent.clientY - svgRect.top - pan.y) / zoom;
 
-            // Store release position
-            releasePosition = { x: mouseX, y: mouseY };
+            // Store release position (top-left of placeholder)
+            releasePosition = { x: mouseX, y: mouseY - placeholderHeight / 2 };
 
-            // Update curved path to follow cursor
+            // Update curved path to follow cursor (connect to left edge of placeholder)
             d3.select(svgRef.current).select('.temp-connection-line')
               .attr('d', linkGenerator({
                 source: [connectionStartX, connectionStartY],
                 target: [mouseX, mouseY],
               }));
+
+            // Update placeholder position
+            d3.select(svgRef.current).select('.temp-placeholder')
+              .attr('transform', `translate(${mouseX}, ${mouseY - placeholderHeight / 2})`);
           })
           .on('end', () => {
-            // Remove temporary line
+            // Remove temporary elements
             d3.select(svgRef.current).select('.temp-connection-line').remove();
+            d3.select(svgRef.current).select('.temp-placeholder').remove();
 
             // Create child slice at release position
             onCreateChildSlice(node.id, releasePosition);
@@ -530,7 +567,65 @@ export function StreamTree({
       .on('drag', handleCanvasDrag);
     svg.call(canvasDrag);
 
-  }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice]);
+    // Render pending slice placeholder
+    if (pendingSlice) {
+      const parentNode = layout.nodes.find(n => n.id === pendingSlice.parentId);
+      if (parentNode) {
+        const parentAdjusted = getAdjustedPosition(parentNode.id, parentNode.x, parentNode.y);
+        const placeholderX = pendingSlice.position.x;
+        const placeholderY = pendingSlice.position.y;
+        const placeholderWidth = 200;
+        const placeholderHeight = 80;
+
+        // Draw connection line to placeholder
+        const sourceX = parentAdjusted.x + parentNode.width;
+        const sourceY = parentAdjusted.y + parentNode.height / 2;
+        const targetX = placeholderX;
+        const targetY = placeholderY + placeholderHeight / 2;
+
+        g.append('path')
+          .attr('class', 'pending-connection-line')
+          .attr('d', linkGenerator({
+            source: [sourceX, sourceY],
+            target: [targetX, targetY],
+          }))
+          .attr('fill', 'none')
+          .attr('stroke', '#3b82f6')
+          .attr('stroke-width', 2)
+          .attr('stroke-dasharray', '5,5');
+
+        // Draw placeholder box
+        const placeholderGroup = g
+          .append('g')
+          .attr('transform', `translate(${placeholderX}, ${placeholderY})`)
+          .attr('class', 'pending-placeholder');
+
+        // Placeholder background with dashed border
+        placeholderGroup
+          .append('rect')
+          .attr('width', placeholderWidth)
+          .attr('height', placeholderHeight)
+          .attr('rx', 8)
+          .attr('fill', '#eff6ff')
+          .attr('stroke', '#3b82f6')
+          .attr('stroke-width', 2)
+          .attr('stroke-dasharray', '5,5')
+          .attr('opacity', 0.8);
+
+        // Placeholder text
+        placeholderGroup
+          .append('text')
+          .attr('x', placeholderWidth / 2)
+          .attr('y', placeholderHeight / 2)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'middle')
+          .attr('font-size', '12px')
+          .attr('fill', '#3b82f6')
+          .text('New Slice...');
+      }
+    }
+
+  }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice, pendingSlice]);
 
   return (
     <div ref={containerRef} className="w-full h-full overflow-hidden bg-slate-50 dark:bg-slate-950">
