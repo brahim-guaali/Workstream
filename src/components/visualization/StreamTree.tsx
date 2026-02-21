@@ -114,6 +114,22 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
   );
 
 
+  // Compute ancestor IDs for the selected stream
+  const getAncestorIds = useCallback((streamId: string | null): Set<string> => {
+    const ancestors = new Set<string>();
+    if (!streamId) return ancestors;
+
+    let currentId: string | null = streamId;
+    while (currentId) {
+      ancestors.add(currentId);
+      const node = layout.nodes.find(n => n.id === currentId);
+      currentId = node?.parentId || null;
+    }
+    return ancestors;
+  }, [layout.nodes]);
+
+  const focusedNodeIds = getAncestorIds(selectedStreamId);
+
   useEffect(() => {
     if (!svgRef.current) return;
 
@@ -134,9 +150,19 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       }
       .node-draggable {
         cursor: grab;
+        transition: opacity 0.2s ease-in-out;
       }
       .node-draggable:active {
         cursor: grabbing;
+      }
+      .node-faded {
+        opacity: 0.25;
+      }
+      .link {
+        transition: opacity 0.2s ease-in-out;
+      }
+      .link-faded {
+        opacity: 0.15;
       }
     `);
 
@@ -172,8 +198,12 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       const targetX = targetAdjusted.x;
       const targetY = targetAdjusted.y + targetNode.height / 2;
 
+      // Fade links that don't connect focused nodes
+      const isLinkFocused = !selectedStreamId ||
+        (focusedNodeIds.has(link.sourceId) && focusedNodeIds.has(link.targetId));
+
       g.append('path')
-        .attr('class', `link link-source-${link.sourceId} link-target-${link.targetId}`)
+        .attr('class', `link link-source-${link.sourceId} link-target-${link.targetId}${!isLinkFocused ? ' link-faded' : ''}`)
         .attr('data-source', link.sourceId)
         .attr('data-target', link.targetId)
         .attr('d', linkGenerator({
@@ -189,10 +219,13 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
     layout.nodes.forEach((node) => {
       const adjustedPos = getAdjustedPosition(node.id, node.x, node.y);
 
+      // Fade nodes that are not in the focused ancestor chain
+      const isNodeFocused = !selectedStreamId || focusedNodeIds.has(node.id);
+
       const nodeGroup = g
         .append('g')
         .attr('transform', `translate(${adjustedPos.x}, ${adjustedPos.y})`)
-        .attr('class', 'node-draggable')
+        .attr('class', `node-draggable${!isNodeFocused ? ' node-faded' : ''}`)
         .attr('data-node-id', node.id);
 
       // Add drag behavior to node
@@ -636,7 +669,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       }
     }
 
-  }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice, pendingSlice]);
+  }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice, pendingSlice, focusedNodeIds]);
 
   return (
     <div ref={containerRef} className="w-full h-full overflow-hidden bg-slate-50 dark:bg-slate-950">
