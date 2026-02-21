@@ -3,760 +3,104 @@
   "exportedAt": "2024-01-15T10:00:00.000Z",
   "streams": [
     {
-      "id": "root-api-migration",
-      "title": "API v2 Migration",
-      "description": "Complete migration from REST API v1 to v2",
+      "id": "root",
+      "title": "Checkout page slow",
+      "description": "Users reporting 5+ second load times",
       "status": "active",
       "source_type": "investigation",
-      "created_at": "2024-01-01T09:00:00.000Z",
+      "created_at": "2024-01-08T09:00:00.000Z",
       "events": [
         {
           "type": "note",
-          "content": "Kickoff meeting completed, scope defined",
+          "content": "Multiple users reported this in support tickets",
           "metadata": null,
-          "created_at": "2024-01-01T10:00:00.000Z"
-        },
-        {
-          "type": "note",
-          "content": "Team assigned: 3 backend engineers",
-          "metadata": null,
-          "created_at": "2024-01-01T11:00:00.000Z"
+          "created_at": "2024-01-08T09:30:00.000Z"
         }
       ],
       "children": [
         {
-          "id": "arch-review",
-          "title": "Architecture Review",
-          "description": "Review current API architecture and plan v2 structure",
+          "id": "profiling",
+          "title": "Profile the page",
+          "description": "Use Chrome DevTools to find bottleneck",
           "status": "done",
-          "source_type": "meeting",
-          "created_at": "2024-01-02T09:00:00.000Z",
+          "source_type": "task",
+          "created_at": "2024-01-08T10:00:00.000Z",
           "events": [
             {
               "type": "note",
-              "content": "Reviewed current API structure",
+              "content": "Found: cart API takes 4 seconds",
               "metadata": null,
-              "created_at": "2024-01-02T10:00:00.000Z"
-            },
-            {
-              "type": "note",
-              "content": "Decision: Use OpenAPI 3.0 spec",
-              "metadata": null,
-              "created_at": "2024-01-02T11:00:00.000Z"
+              "created_at": "2024-01-08T11:00:00.000Z"
             }
           ],
-          "children": [
-            {
-              "id": "doc-api-contracts",
-              "title": "Document API Contracts",
-              "description": "Create comprehensive API contract documentation",
-              "status": "done",
-              "source_type": "task",
-              "created_at": "2024-01-03T09:00:00.000Z",
-              "events": [
-                {
-                  "type": "note",
-                  "content": "Started API contract documentation",
-                  "metadata": null,
-                  "created_at": "2024-01-03T10:00:00.000Z"
-                }
-              ],
-              "children": [
-                {
-                  "id": "openapi-spec-draft",
-                  "title": "OpenAPI Spec Draft",
-                  "description": "Draft the OpenAPI 3.0 specification",
-                  "status": "done",
-                  "source_type": "task",
-                  "created_at": "2024-01-04T09:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "Completed initial spec draft",
-                      "metadata": null,
-                      "created_at": "2024-01-04T14:00:00.000Z"
-                    }
-                  ],
-                  "children": [
-                    {
-                      "id": "request-schemas",
-                      "title": "Request Schemas",
-                      "description": "Define all request body schemas",
-                      "status": "done",
-                      "source_type": "task",
-                      "created_at": "2024-01-05T09:00:00.000Z",
-                      "events": [
-                        {
-                          "type": "note",
-                          "content": "All request schemas defined and validated",
-                          "metadata": null,
-                          "created_at": "2024-01-05T15:00:00.000Z"
-                        }
-                      ],
-                      "children": []
-                    },
-                    {
-                      "id": "response-schemas",
-                      "title": "Response Schemas",
-                      "description": "Define all response body schemas",
-                      "status": "done",
-                      "source_type": "task",
-                      "created_at": "2024-01-05T10:00:00.000Z",
-                      "events": [
-                        {
-                          "type": "note",
-                          "content": "Response schemas completed with error types",
-                          "metadata": null,
-                          "created_at": "2024-01-05T16:00:00.000Z"
-                        }
-                      ],
-                      "children": []
-                    }
-                  ]
-                },
-                {
-                  "id": "versioning-strategy",
-                  "title": "Versioning Strategy",
-                  "description": "Determine API versioning approach",
-                  "status": "done",
-                  "source_type": "discovery",
-                  "created_at": "2024-01-04T10:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "Decided on URL path versioning (/v2/)",
-                      "metadata": null,
-                      "created_at": "2024-01-04T15:00:00.000Z"
-                    }
-                  ],
-                  "children": []
-                }
-              ]
-            },
-            {
-              "id": "define-migration-strategy",
-              "title": "Define Migration Strategy",
-              "description": "Plan the migration approach and timeline",
-              "status": "done",
-              "source_type": "task",
-              "created_at": "2024-01-03T10:00:00.000Z",
-              "events": [
-                {
-                  "type": "note",
-                  "content": "Migration strategy document completed",
-                  "metadata": null,
-                  "created_at": "2024-01-03T16:00:00.000Z"
-                }
-              ],
-              "children": [
-                {
-                  "id": "phased-rollout-plan",
-                  "title": "Phased Rollout Plan",
-                  "description": "Define phases for gradual API rollout",
-                  "status": "done",
-                  "source_type": "meeting",
-                  "created_at": "2024-01-06T09:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "3-phase rollout plan approved by stakeholders",
-                      "metadata": null,
-                      "created_at": "2024-01-06T11:00:00.000Z"
-                    }
-                  ],
-                  "children": []
-                }
-              ]
-            }
-          ]
+          "children": []
         },
         {
-          "id": "auth-refactor",
-          "title": "Authentication Refactor",
-          "description": "Upgrade authentication system to OAuth2",
+          "id": "api-fix",
+          "title": "Fix cart API",
+          "description": "Optimize the slow endpoint",
           "status": "active",
           "source_type": "task",
-          "created_at": "2024-01-07T09:00:00.000Z",
-          "events": [
-            {
-              "type": "note",
-              "content": "Started OAuth2 implementation",
-              "metadata": null,
-              "created_at": "2024-01-07T10:00:00.000Z"
-            }
-          ],
+          "created_at": "2024-01-08T14:00:00.000Z",
+          "events": [],
           "children": [
             {
-              "id": "oauth2-impl",
-              "title": "OAuth2 Implementation",
-              "description": "Implement OAuth2 authentication flows",
-              "status": "active",
-              "source_type": "task",
-              "created_at": "2024-01-08T09:00:00.000Z",
-              "events": [
-                {
-                  "type": "note",
-                  "content": "OAuth2 library integrated",
-                  "metadata": null,
-                  "created_at": "2024-01-08T14:00:00.000Z"
-                }
-              ],
-              "children": [
-                {
-                  "id": "auth-server-setup",
-                  "title": "Authorization Server Setup",
-                  "description": "Configure and deploy authorization server",
-                  "status": "done",
-                  "source_type": "task",
-                  "created_at": "2024-01-09T09:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "Auth server deployed to staging",
-                      "metadata": null,
-                      "created_at": "2024-01-09T17:00:00.000Z"
-                    }
-                  ],
-                  "children": []
-                },
-                {
-                  "id": "client-credentials-flow",
-                  "title": "Client Credentials Flow",
-                  "description": "Implement client credentials OAuth2 flow",
-                  "status": "active",
-                  "source_type": "task",
-                  "created_at": "2024-01-10T09:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "Token endpoint implemented",
-                      "metadata": null,
-                      "created_at": "2024-01-10T14:00:00.000Z"
-                    }
-                  ],
-                  "children": [
-                    {
-                      "id": "token-generation",
-                      "title": "Token Generation",
-                      "description": "Implement JWT token generation",
-                      "status": "done",
-                      "source_type": "task",
-                      "created_at": "2024-01-11T09:00:00.000Z",
-                      "events": [
-                        {
-                          "type": "note",
-                          "content": "JWT generation with RS256 signing complete",
-                          "metadata": null,
-                          "created_at": "2024-01-11T15:00:00.000Z"
-                        }
-                      ],
-                      "children": []
-                    },
-                    {
-                      "id": "scope-validation",
-                      "title": "Scope Validation",
-                      "description": "Implement OAuth2 scope validation",
-                      "status": "active",
-                      "source_type": "task",
-                      "created_at": "2024-01-11T10:00:00.000Z",
-                      "events": [
-                        {
-                          "type": "note",
-                          "content": "Basic scope validation working, need permission matrix",
-                          "metadata": null,
-                          "created_at": "2024-01-11T16:00:00.000Z"
-                        }
-                      ],
-                      "children": [
-                        {
-                          "id": "permission-matrix",
-                          "title": "Permission Matrix",
-                          "description": "Define scope-to-permission mapping",
-                          "status": "active",
-                          "source_type": "discovery",
-                          "created_at": "2024-01-12T09:00:00.000Z",
-                          "events": [
-                            {
-                              "type": "note",
-                              "content": "Mapping out all API endpoints to required scopes",
-                              "metadata": null,
-                              "created_at": "2024-01-12T10:00:00.000Z"
-                            }
-                          ],
-                          "children": []
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "id": "pkce-impl",
-                  "title": "PKCE Implementation",
-                  "description": "Add PKCE support for public clients",
-                  "status": "active",
-                  "source_type": "task",
-                  "created_at": "2024-01-10T10:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "PKCE challenge/verifier logic in progress",
-                      "metadata": null,
-                      "created_at": "2024-01-10T15:00:00.000Z"
-                    }
-                  ],
-                  "children": []
-                }
-              ]
-            },
-            {
-              "id": "token-refresh-logic",
-              "title": "Token Refresh Logic",
-              "description": "Implement refresh token rotation",
-              "status": "blocked",
-              "source_type": "task",
-              "created_at": "2024-01-08T10:00:00.000Z",
-              "events": [
-                {
-                  "type": "note",
-                  "content": "Blocked by Redis session issue",
-                  "metadata": null,
-                  "created_at": "2024-01-13T09:00:00.000Z"
-                }
-              ],
-              "children": [
-                {
-                  "id": "redis-session-issue",
-                  "title": "Redis Session Store Issue",
-                  "description": "Redis cluster timeout under high load",
-                  "status": "active",
-                  "source_type": "blocker",
-                  "created_at": "2024-01-13T09:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "Redis cluster timeout under load",
-                      "metadata": null,
-                      "created_at": "2024-01-13T10:00:00.000Z"
-                    },
-                    {
-                      "type": "note",
-                      "content": "Investigating connection pooling",
-                      "metadata": null,
-                      "created_at": "2024-01-13T11:00:00.000Z"
-                    }
-                  ],
-                  "children": [
-                    {
-                      "id": "conn-pool-analysis",
-                      "title": "Connection Pool Analysis",
-                      "description": "Analyze Redis connection pool settings",
-                      "status": "active",
-                      "source_type": "investigation",
-                      "created_at": "2024-01-13T11:00:00.000Z",
-                      "events": [
-                        {
-                          "type": "note",
-                          "content": "Pool size may be undersized for load",
-                          "metadata": null,
-                          "created_at": "2024-01-13T14:00:00.000Z"
-                        }
-                      ],
-                      "children": []
-                    },
-                    {
-                      "id": "cluster-config-review",
-                      "title": "Cluster Config Review",
-                      "description": "Review Redis cluster configuration",
-                      "status": "active",
-                      "source_type": "task",
-                      "created_at": "2024-01-13T12:00:00.000Z",
-                      "events": [
-                        {
-                          "type": "note",
-                          "content": "Checking cluster node distribution",
-                          "metadata": null,
-                          "created_at": "2024-01-13T15:00:00.000Z"
-                        }
-                      ],
-                      "children": []
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "db-schema-changes",
-          "title": "Database Schema Changes",
-          "description": "Update database schema for v2 API",
-          "status": "active",
-          "source_type": "investigation",
-          "created_at": "2024-01-07T10:00:00.000Z",
-          "events": [
-            {
-              "type": "note",
-              "content": "Identified required schema changes",
-              "metadata": null,
-              "created_at": "2024-01-07T14:00:00.000Z"
-            }
-          ],
-          "children": [
-            {
-              "id": "add-new-indexes",
-              "title": "Add New Indexes",
-              "description": "Add performance-critical indexes",
+              "id": "db-query",
+              "title": "Optimize DB query",
+              "description": "Add index on cart_items table",
               "status": "done",
-              "source_type": "task",
-              "created_at": "2024-01-08T09:00:00.000Z",
-              "events": [
-                {
-                  "type": "note",
-                  "content": "Added composite indexes for common queries",
-                  "metadata": null,
-                  "created_at": "2024-01-08T16:00:00.000Z"
-                }
-              ],
-              "children": [
-                {
-                  "id": "index-perf-testing",
-                  "title": "Index Performance Testing",
-                  "description": "Validate index performance improvements",
-                  "status": "done",
-                  "source_type": "task",
-                  "created_at": "2024-01-09T09:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "60% query performance improvement confirmed",
-                      "metadata": null,
-                      "created_at": "2024-01-09T14:00:00.000Z"
-                    }
-                  ],
-                  "children": []
-                }
-              ]
-            },
-            {
-              "id": "data-migration-script",
-              "title": "Data Migration Script",
-              "description": "Script to migrate data to new schema",
-              "status": "active",
-              "source_type": "task",
-              "created_at": "2024-01-10T09:00:00.000Z",
-              "events": [
-                {
-                  "type": "note",
-                  "content": "Migration script in development",
-                  "metadata": null,
-                  "created_at": "2024-01-10T10:00:00.000Z"
-                }
-              ],
-              "children": [
-                {
-                  "id": "batch-processing-logic",
-                  "title": "Batch Processing Logic",
-                  "description": "Implement batch processing for large tables",
-                  "status": "active",
-                  "source_type": "task",
-                  "created_at": "2024-01-11T09:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "Using 1000 row batches with progress tracking",
-                      "metadata": null,
-                      "created_at": "2024-01-11T14:00:00.000Z"
-                    }
-                  ],
-                  "children": [
-                    {
-                      "id": "error-recovery-handler",
-                      "title": "Error Recovery Handler",
-                      "description": "Handle failures during batch migration",
-                      "status": "active",
-                      "source_type": "task",
-                      "created_at": "2024-01-12T09:00:00.000Z",
-                      "events": [
-                        {
-                          "type": "note",
-                          "content": "Implementing checkpoint-based recovery",
-                          "metadata": null,
-                          "created_at": "2024-01-12T10:00:00.000Z"
-                        }
-                      ],
-                      "children": []
-                    }
-                  ]
-                },
-                {
-                  "id": "rollback-procedure",
-                  "title": "Rollback Procedure",
-                  "description": "Define rollback steps if migration fails",
-                  "status": "active",
-                  "source_type": "task",
-                  "created_at": "2024-01-11T10:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "Documenting rollback SQL scripts",
-                      "metadata": null,
-                      "created_at": "2024-01-11T15:00:00.000Z"
-                    }
-                  ],
-                  "children": []
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "perf-bottleneck",
-          "title": "Performance Bottleneck",
-          "description": "Critical performance issue blocking release",
-          "status": "done",
-          "source_type": "blocker",
-          "created_at": "2024-01-05T09:00:00.000Z",
-          "events": [
-            {
-              "type": "note",
-              "content": "Identified N+1 query problem",
-              "metadata": null,
-              "created_at": "2024-01-05T10:00:00.000Z"
-            },
-            {
-              "type": "note",
-              "content": "Fixed with eager loading",
-              "metadata": null,
-              "created_at": "2024-01-06T15:00:00.000Z"
-            }
-          ],
-          "children": [
-            {
-              "id": "query-optimization",
-              "title": "Query Optimization",
-              "description": "Optimize slow database queries",
-              "status": "done",
-              "source_type": "discovery",
-              "created_at": "2024-01-05T10:00:00.000Z",
-              "events": [
-                {
-                  "type": "note",
-                  "content": "Found 40% improvement with new indexes",
-                  "metadata": null,
-                  "created_at": "2024-01-05T16:00:00.000Z"
-                }
-              ],
-              "children": [
-                {
-                  "id": "n1-query-fix",
-                  "title": "N+1 Query Fix",
-                  "description": "Fix N+1 query anti-pattern",
-                  "status": "done",
-                  "source_type": "task",
-                  "created_at": "2024-01-06T09:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "Refactored to batch queries",
-                      "metadata": null,
-                      "created_at": "2024-01-06T14:00:00.000Z"
-                    }
-                  ],
-                  "children": []
-                },
-                {
-                  "id": "eager-loading-impl",
-                  "title": "Eager Loading Implementation",
-                  "description": "Add eager loading for related entities",
-                  "status": "done",
-                  "source_type": "task",
-                  "created_at": "2024-01-06T10:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "Eager loading added to all list endpoints",
-                      "metadata": null,
-                      "created_at": "2024-01-06T15:00:00.000Z"
-                    }
-                  ],
-                  "children": []
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "testing-strategy",
-          "title": "Testing Strategy",
-          "description": "Define and implement testing approach for v2 API",
-          "status": "active",
-          "source_type": "meeting",
-          "created_at": "2024-01-08T09:00:00.000Z",
-          "events": [
-            {
-              "type": "note",
-              "content": "Agreed on 80% coverage target",
-              "metadata": null,
-              "created_at": "2024-01-08T10:00:00.000Z"
-            }
-          ],
-          "children": [
-            {
-              "id": "unit-test-coverage",
-              "title": "Unit Test Coverage",
-              "description": "Increase unit test coverage",
-              "status": "active",
               "source_type": "task",
               "created_at": "2024-01-09T09:00:00.000Z",
               "events": [
                 {
                   "type": "note",
-                  "content": "Currently at 65% coverage",
-                  "metadata": null,
-                  "created_at": "2024-01-09T10:00:00.000Z"
-                }
-              ],
-              "children": [
-                {
-                  "id": "auth-module-tests",
-                  "title": "Auth Module Tests",
-                  "description": "Write tests for authentication module",
-                  "status": "active",
-                  "source_type": "task",
-                  "created_at": "2024-01-10T09:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "Token validation tests complete",
-                      "metadata": null,
-                      "created_at": "2024-01-10T14:00:00.000Z"
-                    }
-                  ],
-                  "children": []
-                },
-                {
-                  "id": "api-endpoint-tests",
-                  "title": "API Endpoint Tests",
-                  "description": "Write tests for API endpoints",
-                  "status": "active",
-                  "source_type": "task",
-                  "created_at": "2024-01-10T10:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "User endpoints tests in progress",
-                      "metadata": null,
-                      "created_at": "2024-01-10T15:00:00.000Z"
-                    }
-                  ],
-                  "children": []
-                }
-              ]
-            },
-            {
-              "id": "integration-test-suite",
-              "title": "Integration Test Suite",
-              "description": "Build integration test suite",
-              "status": "active",
-              "source_type": "task",
-              "created_at": "2024-01-09T10:00:00.000Z",
-              "events": [
-                {
-                  "type": "note",
-                  "content": "Setting up test database",
+                  "content": "Added composite index, 80% faster",
                   "metadata": null,
                   "created_at": "2024-01-09T11:00:00.000Z"
                 }
               ],
-              "children": [
-                {
-                  "id": "e2e-test-scenarios",
-                  "title": "E2E Test Scenarios",
-                  "description": "Define end-to-end test scenarios",
-                  "status": "active",
-                  "source_type": "task",
-                  "created_at": "2024-01-11T09:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "12 critical paths identified",
-                      "metadata": null,
-                      "created_at": "2024-01-11T10:00:00.000Z"
-                    }
-                  ],
-                  "children": [
-                    {
-                      "id": "happy-path-tests",
-                      "title": "Happy Path Tests",
-                      "description": "Test successful user flows",
-                      "status": "done",
-                      "source_type": "task",
-                      "created_at": "2024-01-12T09:00:00.000Z",
-                      "events": [
-                        {
-                          "type": "note",
-                          "content": "All happy path scenarios passing",
-                          "metadata": null,
-                          "created_at": "2024-01-12T16:00:00.000Z"
-                        }
-                      ],
-                      "children": []
-                    },
-                    {
-                      "id": "error-handling-tests",
-                      "title": "Error Handling Tests",
-                      "description": "Test error scenarios and edge cases",
-                      "status": "active",
-                      "source_type": "task",
-                      "created_at": "2024-01-12T10:00:00.000Z",
-                      "events": [
-                        {
-                          "type": "note",
-                          "content": "Testing 4xx error responses",
-                          "metadata": null,
-                          "created_at": "2024-01-12T14:00:00.000Z"
-                        }
-                      ],
-                      "children": []
-                    }
-                  ]
-                },
-                {
-                  "id": "load-testing-setup",
-                  "title": "Load Testing Setup",
-                  "description": "Set up load testing infrastructure",
-                  "status": "active",
-                  "source_type": "investigation",
-                  "created_at": "2024-01-11T10:00:00.000Z",
-                  "events": [
-                    {
-                      "type": "note",
-                      "content": "Evaluating k6 vs Artillery",
-                      "metadata": null,
-                      "created_at": "2024-01-11T11:00:00.000Z"
-                    }
-                  ],
-                  "children": [
-                    {
-                      "id": "k6-script-dev",
-                      "title": "k6 Script Development",
-                      "description": "Write k6 load testing scripts",
-                      "status": "active",
-                      "source_type": "task",
-                      "created_at": "2024-01-13T09:00:00.000Z",
-                      "events": [
-                        {
-                          "type": "note",
-                          "content": "Basic script template created",
-                          "metadata": null,
-                          "created_at": "2024-01-13T10:00:00.000Z"
-                        }
-                      ],
-                      "children": []
-                    }
-                  ]
-                }
-              ]
+              "children": []
+            },
+            {
+              "id": "caching",
+              "title": "Add Redis cache",
+              "description": "Cache product details",
+              "status": "active",
+              "source_type": "task",
+              "created_at": "2024-01-09T14:00:00.000Z",
+              "events": [],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "frontend",
+          "title": "Frontend improvements",
+          "description": "Improve perceived performance",
+          "status": "active",
+          "source_type": "task",
+          "created_at": "2024-01-09T09:00:00.000Z",
+          "events": [],
+          "children": [
+            {
+              "id": "skeleton",
+              "title": "Add skeleton loader",
+              "description": "Show placeholder while loading",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-01-09T10:00:00.000Z",
+              "events": [],
+              "children": []
+            },
+            {
+              "id": "lazy-load",
+              "title": "Lazy load images",
+              "description": "Defer offscreen images",
+              "status": "active",
+              "source_type": "task",
+              "created_at": "2024-01-10T09:00:00.000Z",
+              "events": [],
+              "children": []
             }
           ]
         }

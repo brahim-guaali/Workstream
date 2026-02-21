@@ -21,6 +21,7 @@ export function ProjectPage() {
   const [branchFromStreamId, setBranchFromStreamId] = useState<string | null>(null);
   const [newSlicePosition, setNewSlicePosition] = useState<{ x: number; y: number } | null>(null);
   const [pendingSlice, setPendingSlice] = useState<{ parentId: string; position: { x: number; y: number } } | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const { events, loading: eventsLoading, createEvent } = useEvents(projectId, selectedStream?.id);
 
@@ -153,6 +154,7 @@ export function ProjectPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setIsImporting(true);
     try {
       const text = await file.text();
       const data = JSON.parse(text);
@@ -162,10 +164,11 @@ export function ProjectPage() {
       }
 
       await importProject(data);
-      alert('Project imported successfully');
     } catch (err) {
       console.error('Import failed:', err);
       alert('Failed to import project: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setIsImporting(false);
     }
 
     // Reset the input
@@ -174,11 +177,32 @@ export function ProjectPage() {
     }
   };
 
-  if (loading) {
+  const handleLoadExample = async () => {
+    setIsImporting(true);
+    try {
+      // Clear existing streams first
+      for (const stream of streams) {
+        await deleteStream(stream.id);
+      }
+      const response = await fetch('/examples/api-migration.json');
+      const data = await response.json();
+      await importProject(data);
+    } catch (err) {
+      console.error('Failed to load example:', err);
+      alert('Failed to load example: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  if (loading || isImporting) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-[calc(100vh-3.5rem)]">
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-3.5rem)] gap-3">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          {isImporting && (
+            <p className="text-sm text-slate-500 dark:text-slate-400">Importing streams...</p>
+          )}
         </div>
       </Layout>
     );
@@ -281,10 +305,17 @@ export function ProjectPage() {
                 <p className="text-slate-500 dark:text-slate-400 mb-4 max-w-sm">
                   Start by creating your first stream to track your project's evolution
                 </p>
-                <Button onClick={handleOpenAddModal}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create First Stream
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Button onClick={handleOpenAddModal}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create First Stream
+                  </Button>
+                  <span className="text-slate-400">or</span>
+                  <Button variant="secondary" onClick={handleLoadExample}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Load Example
+                  </Button>
+                </div>
               </div>
             ) : (
               <StreamTree

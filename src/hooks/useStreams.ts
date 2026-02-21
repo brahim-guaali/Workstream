@@ -277,8 +277,8 @@ export function useStreams(projectId: string | undefined) {
           branchedFromEventId: null,
           createdAt: Timestamp.fromDate(new Date(stream.created_at)),
           updatedAt: serverTimestamp(),
-          positionX: stream.position_x,
-          positionY: stream.position_y,
+          ...(stream.position_x !== undefined && { positionX: stream.position_x }),
+          ...(stream.position_y !== undefined && { positionY: stream.position_y }),
         });
 
         // Create events for this stream
