@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import * as d3 from 'd3';
 import type { StreamWithChildren } from '../../types/database';
 import { useVisualization } from '../../hooks/useVisualization';
@@ -34,17 +34,28 @@ interface StreamTreeProps {
   pendingSlice?: { parentId: string; position: { x: number; y: number } } | null;
 }
 
-export function StreamTree({
+export interface StreamTreeHandle {
+  resetView: () => void;
+}
+
+export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function StreamTree({
   streamTree,
   selectedStreamId,
   onSelectStream,
   onUpdateStreamPosition,
   onCreateChildSlice,
   pendingSlice,
-}: StreamTreeProps) {
+}, ref) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { layout, zoom, pan, setPan } = useVisualization(streamTree);
+  const { layout, zoom, pan, setPan, setZoom } = useVisualization(streamTree);
+
+  useImperativeHandle(ref, () => ({
+    resetView: () => {
+      setPan({ x: 0, y: 0 });
+      setZoom(1);
+    },
+  }), [setPan, setZoom]);
 
   // Initialize offsets from saved positions
   const getInitialOffsets = useCallback(() => {
@@ -637,4 +648,4 @@ export function StreamTree({
       />
     </div>
   );
-}
+});

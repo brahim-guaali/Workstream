@@ -1,19 +1,21 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Crosshair } from 'lucide-react';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
-import { StreamTree } from '../components/visualization/StreamTree';
+import { StreamTree, type StreamTreeHandle } from '../components/visualization/StreamTree';
 import { StreamDetail } from '../components/stream/StreamDetail';
 import { AddStreamModal } from '../components/stream/AddStreamModal';
 import { useStreams } from '../hooks/useStreams';
 import { useEvents } from '../hooks/useEvents';
-import type { StreamWithChildren, SourceType } from '../types/database';
+import { statusHexColors, sourceTypeHexColors } from '../lib/utils';
+import type { StreamWithChildren, SourceType, StreamStatus } from '../types/database';
 
 export function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const { streams, streamTree, loading, createStream, updateStream, deleteStream, exportProject, importProject } = useStreams(projectId);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const streamTreeRef = useRef<StreamTreeHandle>(null);
   const [selectedStream, setSelectedStream] = useState<StreamWithChildren | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [branchFromStreamId, setBranchFromStreamId] = useState<string | null>(null);
@@ -21,6 +23,31 @@ export function ProjectPage() {
   const [pendingSlice, setPendingSlice] = useState<{ parentId: string; position: { x: number; y: number } } | null>(null);
 
   const { events, loading: eventsLoading, createEvent } = useEvents(projectId, selectedStream?.id);
+
+  // Compute stream statistics (count leaf nodes - streams with no children)
+  const stats = useMemo(() => {
+    const byStatus: Record<StreamStatus, number> = { active: 0, blocked: 0, done: 0 };
+    const byType: Record<SourceType, number> = { task: 0, investigation: 0, meeting: 0, blocker: 0, discovery: 0 };
+
+    // Find IDs of streams that are parents (have children)
+    const parentIds = new Set(
+      streams.filter((s) => s.parent_stream_id !== null).map((s) => s.parent_stream_id)
+    );
+
+    // Leaf nodes = streams that are not parents (no children)
+    const leafNodes = streams.filter((s) => !parentIds.has(s.id));
+
+    leafNodes.forEach((s) => {
+      byStatus[s.status]++;
+      byType[s.source_type]++;
+    });
+
+    return { total: leafNodes.length, byStatus, byType };
+  }, [streams]);
+
+  const handleRecenter = useCallback(() => {
+    streamTreeRef.current?.resetView();
+  }, []);
 
   const handleSelectStream = useCallback((stream: StreamWithChildren) => {
     setSelectedStream(stream);
@@ -162,14 +189,61 @@ export function ProjectPage() {
       <div className="h-[calc(100vh-3.5rem)] flex flex-col">
         {/* Toolbar */}
         <div className="flex-shrink-0 h-14 px-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-          <Link
-            to="/"
-            className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              to="/"
+              className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Link>
+
+            {/* Stream Stats */}
+            {streams.length > 0 && (
+              <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {stats.total} stream{stats.total !== 1 ? 's' : ''}
+                </span>
+                <div className="flex items-center gap-2">
+                  {(Object.entries(stats.byStatus) as [StreamStatus, number][])
+                    .filter(([, count]) => count > 0)
+                    .map(([status, count]) => (
+                      <span
+                        key={status}
+                        className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: `${statusHexColors[status]}20`, color: statusHexColors[status] }}
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: statusHexColors[status] }}
+                        />
+                        {count} {status}
+                      </span>
+                    ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  {(Object.entries(stats.byType) as [SourceType, number][])
+                    .filter(([, count]) => count > 0)
+                    .map(([type, count]) => (
+                      <span
+                        key={type}
+                        className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: `${sourceTypeHexColors[type]}20`, color: sourceTypeHexColors[type] }}
+                      >
+                        {count} {type}{count !== 1 ? 's' : ''}
+                      </span>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center gap-2">
+            {streams.length > 0 && (
+              <Button variant="secondary" size="sm" onClick={handleRecenter} title="Recenter view">
+                <Crosshair className="w-4 h-4" />
+              </Button>
+            )}
             <input
               ref={fileInputRef}
               type="file"
@@ -214,6 +288,7 @@ export function ProjectPage() {
               </div>
             ) : (
               <StreamTree
+                ref={streamTreeRef}
                 streamTree={streamTree}
                 selectedStreamId={selectedStream?.id || null}
                 onSelectStream={handleSelectStream}
