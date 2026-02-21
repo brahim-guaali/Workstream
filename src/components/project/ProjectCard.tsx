@@ -22,9 +22,16 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
     if (!user) return;
     const streamsRef = collection(db, 'users', user.uid, 'projects', project.id, 'streams');
     const unsubscribe = onSnapshot(query(streamsRef), (snapshot) => {
-      setStreamCount(snapshot.size);
+      // Find parent IDs to identify leaf nodes (streams with no children)
+      const parentIds = new Set(
+        snapshot.docs
+          .map((doc) => doc.data().parentStreamId as string | null)
+          .filter(Boolean)
+      );
+      const leafDocs = snapshot.docs.filter((doc) => !parentIds.has(doc.id));
+      setStreamCount(leafDocs.length);
       const counts: Record<string, number> = {};
-      snapshot.docs.forEach((doc) => {
+      leafDocs.forEach((doc) => {
         const status = doc.data().status as string;
         counts[status] = (counts[status] || 0) + 1;
       });
