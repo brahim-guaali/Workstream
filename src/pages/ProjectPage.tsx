@@ -1,6 +1,6 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Upload, Crosshair, Pencil, X, Check, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Crosshair, Pencil, X, Check, BarChart3, ChevronDown, FileText, FileDown, FileJson } from 'lucide-react';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -13,6 +13,8 @@ import { useStreams } from '../hooks/useStreams';
 import { useEvents } from '../hooks/useEvents';
 import { useProject } from '../hooks/useProjects';
 import { statusHexColors, sourceTypeHexColors } from '../lib/utils';
+import { generateMarkdown, generatePrintHTML } from '../lib/exportDocument';
+import type { ExportData } from '../lib/exportDocument';
 import type { StreamWithChildren, SourceType, StreamStatus, ProjectMetric } from '../types/database';
 
 export function ProjectPage() {
@@ -44,8 +46,22 @@ export function ProjectPage() {
   const [promptNewName, setPromptNewName] = useState('');
   const [promptNewValue, setPromptNewValue] = useState('');
   const [promptNewTarget, setPromptNewTarget] = useState('');
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
 
   const { events, loading: eventsLoading, createEvent, deleteEvent } = useEvents(projectId, selectedStream?.id);
+
+  // Close export dropdown on outside click
+  useEffect(() => {
+    if (!exportDropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(e.target as Node)) {
+        setExportDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [exportDropdownOpen]);
 
   // Compute stream statistics (count leaf nodes - streams with no children)
   const stats = useMemo(() => {
@@ -161,18 +177,58 @@ export function ProjectPage() {
     setIsAddModalOpen(true);
   };
 
-  const handleExport = async () => {
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportJSON = async () => {
+    setExportDropdownOpen(false);
     try {
       const data = await exportProject();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `project-export-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const exportPayload = { ...data, metrics: project?.metrics ?? [] };
+      const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+      downloadBlob(blob, `project-export-${new Date().toISOString().slice(0, 10)}.json`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export project');
+    }
+  };
+
+  const handleExportMarkdown = async () => {
+    setExportDropdownOpen(false);
+    if (!project) return;
+    try {
+      const data = await exportProject() as ExportData;
+      const md = generateMarkdown(project, data);
+      const blob = new Blob([md], { type: 'text/markdown' });
+      downloadBlob(blob, `${project.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-export.md`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export project');
+    }
+  };
+
+  const handleExportPDF = async () => {
+    setExportDropdownOpen(false);
+    if (!project) return;
+    try {
+      const data = await exportProject() as ExportData;
+      const html = generatePrintHTML(project, data);
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert('Please allow popups to export as PDF');
+        return;
+      }
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.onload = () => printWindow.print();
     } catch (err) {
       console.error('Export failed:', err);
       alert('Failed to export project');
@@ -193,6 +249,11 @@ export function ProjectPage() {
       }
 
       await importProject(data);
+
+      // Restore metrics if present in the import file
+      if (Array.isArray(data.metrics) && data.metrics.length > 0) {
+        await updateProject({ metrics: data.metrics });
+      }
     } catch (err) {
       console.error('Import failed:', err);
       alert('Failed to import project: ' + (err instanceof Error ? err.message : 'Unknown error'));
@@ -330,10 +391,38 @@ export function ProjectPage() {
                 <Upload className="w-4 h-4 mr-1" />
                 Import
               </Button>
-              <Button variant="secondary" size="sm" onClick={handleExport}>
-                <Download className="w-4 h-4 mr-1" />
-                Export
-              </Button>
+              <div className="relative" ref={exportDropdownRef}>
+                <Button variant="secondary" size="sm" onClick={() => setExportDropdownOpen(!exportDropdownOpen)}>
+                  <Download className="w-4 h-4 mr-1" />
+                  Export
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+                {exportDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-50 py-1">
+                    <button
+                      onClick={handleExportJSON}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                    >
+                      <FileJson className="w-4 h-4 text-stone-400" />
+                      JSON (Data)
+                    </button>
+                    <button
+                      onClick={handleExportMarkdown}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                    >
+                      <FileText className="w-4 h-4 text-stone-400" />
+                      Markdown
+                    </button>
+                    <button
+                      onClick={handleExportPDF}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                    >
+                      <FileDown className="w-4 h-4 text-stone-400" />
+                      PDF (Print)
+                    </button>
+                  </div>
+                )}
+              </div>
               <Button onClick={handleOpenAddModal}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Stream
