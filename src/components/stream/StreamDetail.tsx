@@ -76,6 +76,8 @@ export function StreamDetail({
     new Date(stream.created_at).toISOString().slice(0, 16)
   );
   const [newDependency, setNewDependency] = useState('');
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState(stream.description || '');
 
   const handleStatusChange = async (status: StreamStatus) => {
     await onUpdateStream({ status });
@@ -105,6 +107,16 @@ export function StreamDetail({
   const handleCancelEditDate = () => {
     setEditedDate(new Date(stream.created_at).toISOString().slice(0, 16));
     setIsEditingDate(false);
+  };
+
+  const handleSaveDescription = async () => {
+    await onUpdateStream({ description: editedDescription.trim() || null });
+    setIsEditingDescription(false);
+  };
+
+  const handleCancelEditDescription = () => {
+    setEditedDescription(stream.description || '');
+    setIsEditingDescription(false);
   };
 
   const handleAddDependency = async () => {
@@ -272,16 +284,71 @@ export function StreamDetail({
         </div>
 
         {/* Description */}
-        {stream.description && (
-          <div>
-            <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
-              Description
-            </h3>
-            <p className="text-sm text-stone-600 dark:text-stone-400 whitespace-pre-wrap">
+        <div>
+          <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-2 flex items-center gap-2">
+            Description
+            {!isEditingDescription && (
+              <button
+                onClick={() => {
+                  setEditedDescription(stream.description || '');
+                  setIsEditingDescription(true);
+                }}
+                className="p-0.5 rounded hover:bg-stone-100 dark:hover:bg-stone-800 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Pencil className="w-3 h-3 text-stone-400" />
+              </button>
+            )}
+          </h3>
+          {isEditingDescription ? (
+            <div className="space-y-2">
+              <textarea
+                value={editedDescription}
+                onChange={(e) => setEditedDescription(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') handleCancelEditDescription();
+                }}
+                placeholder="Add a description..."
+                rows={3}
+                autoFocus
+                className="w-full px-3 py-2 text-sm bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 rounded-md text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveDescription}
+                  className="p-1 rounded-lg hover:bg-green-100 dark:hover:bg-green-900 text-green-600"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleCancelEditDescription}
+                  className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ) : stream.description ? (
+            <p
+              className="text-sm text-stone-600 dark:text-stone-400 whitespace-pre-wrap cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-800/50 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors"
+              onClick={() => {
+                setEditedDescription(stream.description || '');
+                setIsEditingDescription(true);
+              }}
+            >
               {stream.description}
             </p>
-          </div>
-        )}
+          ) : (
+            <button
+              onClick={() => {
+                setEditedDescription('');
+                setIsEditingDescription(true);
+              }}
+              className="text-sm text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+            >
+              + Add description
+            </button>
+          )}
+        </div>
 
         {/* Dependencies */}
         <div>
