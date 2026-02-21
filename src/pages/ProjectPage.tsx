@@ -1,8 +1,11 @@
 import { useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Upload, Crosshair } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Crosshair, Pencil } from 'lucide-react';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
+import { Input } from '../components/ui/Input';
+import { Textarea } from '../components/ui/Textarea';
 import { StreamTree, type StreamTreeHandle } from '../components/visualization/StreamTree';
 import { StreamDetail } from '../components/stream/StreamDetail';
 import { AddStreamModal } from '../components/stream/AddStreamModal';
@@ -14,7 +17,10 @@ import type { StreamWithChildren, SourceType, StreamStatus } from '../types/data
 
 export function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
-  const { project } = useProject(projectId);
+  const { project, updateProject } = useProject(projectId);
+  const [isEditingProject, setIsEditingProject] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   const { streams, streamTree, loading, createStream, updateStream, deleteStream, exportProject, importProject } = useStreams(projectId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamTreeRef = useRef<StreamTreeHandle>(null);
@@ -214,66 +220,31 @@ export function ProjectPage() {
     <Layout>
       <div className="h-[calc(100vh-3.5rem)] flex flex-col">
         {/* Toolbar */}
-        <div className="flex-shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 min-w-0">
+        <div className="flex-shrink-0 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900">
+          {/* Top row: nav + title + actions */}
+          <div className="px-4 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
               <Link
                 to="/"
-                className="flex-shrink-0 flex items-center gap-1 text-sm text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
+                className="flex-shrink-0 p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
               >
-                <ArrowLeft className="w-4 h-4" />
-                Back
+                <ArrowLeft className="w-5 h-5" />
               </Link>
-
-              <div className="min-w-0 pl-4 border-l border-stone-200 dark:border-stone-700">
-                <h1 className="text-xl font-bold text-stone-900 dark:text-stone-100 truncate">
+              <div className="flex items-center gap-2 group min-w-0">
+                <h1 className="text-lg font-bold text-stone-900 dark:text-stone-100 truncate">
                   {project?.name || 'Project'}
                 </h1>
-                {project?.description && (
-                  <p className="text-sm text-stone-500 dark:text-stone-400 truncate">
-                    {project.description}
-                  </p>
-                )}
+                <button
+                  onClick={() => {
+                    setEditName(project?.name || '');
+                    setEditDescription(project?.description || '');
+                    setIsEditingProject(true);
+                  }}
+                  className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Pencil className="w-4 h-4 text-stone-400" />
+                </button>
               </div>
-
-              {/* Stream Stats */}
-              {streams.length > 0 && (
-                <div className="flex items-center gap-3 pl-4 border-l border-stone-200 dark:border-stone-700">
-                  <span className="text-sm font-medium text-stone-700 dark:text-stone-300">
-                    {stats.total} stream{stats.total !== 1 ? 's' : ''}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {(Object.entries(stats.byStatus) as [StreamStatus, number][])
-                      .filter(([, count]) => count > 0)
-                      .map(([status, count]) => (
-                        <span
-                          key={status}
-                          className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: `${statusHexColors[status]}20`, color: statusHexColors[status] }}
-                        >
-                          <span
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: statusHexColors[status] }}
-                          />
-                          {count} {status}
-                        </span>
-                      ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {(Object.entries(stats.byType) as [SourceType, number][])
-                      .filter(([, count]) => count > 0)
-                      .map(([type, count]) => (
-                        <span
-                          key={type}
-                          className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: `${sourceTypeHexColors[type]}20`, color: sourceTypeHexColors[type] }}
-                        >
-                          {count} {type}{count !== 1 ? 's' : ''}
-                        </span>
-                      ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -303,6 +274,54 @@ export function ProjectPage() {
               </Button>
             </div>
           </div>
+
+          {/* Bottom row: description + stats */}
+          {(project?.description || streams.length > 0) && (
+            <div className="px-4 pb-2.5 flex flex-wrap items-start gap-4 text-sm">
+              {project?.description && (
+                <p className="text-stone-500 dark:text-stone-400">
+                  {project.description}
+                </p>
+              )}
+              {streams.length > 0 && (
+                <div className="flex items-center gap-3 ml-auto">
+                  <span className="font-medium text-stone-700 dark:text-stone-300">
+                    {stats.total} stream{stats.total !== 1 ? 's' : ''}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {(Object.entries(stats.byStatus) as [StreamStatus, number][])
+                      .filter(([, count]) => count > 0)
+                      .map(([status, count]) => (
+                        <span
+                          key={status}
+                          className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${statusHexColors[status]}20`, color: statusHexColors[status] }}
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: statusHexColors[status] }}
+                          />
+                          {count} {status}
+                        </span>
+                      ))}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {(Object.entries(stats.byType) as [SourceType, number][])
+                      .filter(([, count]) => count > 0)
+                      .map(([type, count]) => (
+                        <span
+                          key={type}
+                          className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${sourceTypeHexColors[type]}20`, color: sourceTypeHexColors[type] }}
+                        >
+                          {count} {type}{count !== 1 ? 's' : ''}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Main content */}
@@ -375,6 +394,44 @@ export function ProjectPage() {
         streams={streamTree}
         defaultParentId={branchFromStreamId}
       />
+
+      {/* Edit Project Modal */}
+      <Modal isOpen={isEditingProject} onClose={() => setIsEditingProject(false)} title="Edit Project">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!editName.trim()) return;
+            updateProject({ name: editName.trim(), description: editDescription.trim() || null });
+            setIsEditingProject(false);
+          }}
+          className="space-y-4"
+        >
+          <Input
+            id="edit-project-name"
+            label="Project Name"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            placeholder="Enter project name"
+            autoFocus
+          />
+          <Textarea
+            id="edit-project-description"
+            label="Description (optional)"
+            value={editDescription}
+            onChange={(e) => setEditDescription(e.target.value)}
+            placeholder="What is this project about?"
+            rows={3}
+          />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setIsEditingProject(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!editName.trim()}>
+              Save
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </Layout>
   );
 }

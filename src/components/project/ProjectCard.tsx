@@ -1,7 +1,10 @@
-import { Trash2, MoreVertical } from 'lucide-react';
+import { Trash2, MoreVertical, GitBranch, Calendar } from 'lucide-react';
 import type { Project } from '../../types/database';
-import { formatDate } from '../../lib/utils';
-import { useState } from 'react';
+import { formatDate, getRelativeTime } from '../../lib/utils';
+import { useState, useEffect } from 'react';
+import { collection, query, onSnapshot } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ProjectCardProps {
   project: Project;
@@ -9,8 +12,26 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, onDelete }: ProjectCardProps) {
+  const { user } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [streamCount, setStreamCount] = useState(0);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!user) return;
+    const streamsRef = collection(db, 'users', user.uid, 'projects', project.id, 'streams');
+    const unsubscribe = onSnapshot(query(streamsRef), (snapshot) => {
+      setStreamCount(snapshot.size);
+      const counts: Record<string, number> = {};
+      snapshot.docs.forEach((doc) => {
+        const status = doc.data().status as string;
+        counts[status] = (counts[status] || 0) + 1;
+      });
+      setStatusCounts(counts);
+    });
+    return unsubscribe;
+  }, [user, project.id]);
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -66,8 +87,37 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
           )}
         </div>
       </div>
-      <div className="mt-3 text-xs text-stone-400 dark:text-stone-500">
-        Updated {formatDate(project.updated_at)}
+
+      {/* Stream stats */}
+      <div className="mt-3 flex items-center gap-3">
+        <span className="flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400">
+          <GitBranch className="w-3.5 h-3.5" />
+          {streamCount} stream{streamCount !== 1 ? 's' : ''}
+        </span>
+        {statusCounts.active > 0 && (
+          <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+            {statusCounts.active} active
+          </span>
+        )}
+        {statusCounts.blocked > 0 && (
+          <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+            {statusCounts.blocked} blocked
+          </span>
+        )}
+        {statusCounts.done > 0 && (
+          <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
+            {statusCounts.done} done
+          </span>
+        )}
+      </div>
+
+      {/* Dates */}
+      <div className="mt-2 flex items-center gap-3 text-xs text-stone-400 dark:text-stone-500">
+        <span className="flex items-center gap-1">
+          <Calendar className="w-3 h-3" />
+          Created {formatDate(project.created_at)}
+        </span>
+        <span>Updated {getRelativeTime(project.updated_at)}</span>
       </div>
     </div>
   );

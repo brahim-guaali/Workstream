@@ -53,7 +53,23 @@ export function useProject(projectId: string | undefined) {
     return unsubscribe;
   }, [user, projectId]);
 
-  return { project, loading };
+  const updateProject = useCallback(
+    async (updates: Partial<Project>) => {
+      if (!user || !projectId) throw new Error('Not authenticated');
+
+      const projectRef = doc(db, 'users', user.uid, 'projects', projectId);
+      const updateData: Record<string, unknown> = {
+        updatedAt: serverTimestamp(),
+      };
+      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.description !== undefined) updateData.description = updates.description;
+
+      await updateDoc(projectRef, updateData);
+    },
+    [user, projectId]
+  );
+
+  return { project, loading, updateProject };
 }
 
 export function useProjects() {
