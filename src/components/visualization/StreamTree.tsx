@@ -145,6 +145,10 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         0%, 100% { opacity: 1; }
         50% { opacity: 0.6; }
       }
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
       @keyframes stream-flow {
         0% { stroke-dashoffset: 12; }
         100% { stroke-dashoffset: 0; }
@@ -404,15 +408,40 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       }
 
       // Status icon (white)
-      badgeGroup
-        .append('path')
-        .attr('d', statusIcons[node.stream.status])
-        .attr('transform', 'translate(4, 1)')
-        .attr('stroke', '#ffffff')
-        .attr('stroke-width', 2.5)
-        .attr('stroke-linecap', 'round')
-        .attr('stroke-linejoin', 'round')
-        .attr('fill', 'none');
+      if (node.stream.status === 'active') {
+        // Spinner for active status
+        const spinnerG = badgeGroup
+          .append('g')
+          .attr('transform', 'translate(14, 11)')
+          .append('g')
+          .style('animation', 'spin 1s linear infinite')
+          .style('transform-origin', '0px 0px');
+
+        spinnerG
+          .append('circle')
+          .attr('r', 6)
+          .attr('fill', 'none')
+          .attr('stroke', 'rgba(255,255,255,0.3)')
+          .attr('stroke-width', 2);
+
+        spinnerG
+          .append('path')
+          .attr('d', 'M0,-6 A6,6 0 0,1 6,0')
+          .attr('fill', 'none')
+          .attr('stroke', '#ffffff')
+          .attr('stroke-width', 2)
+          .attr('stroke-linecap', 'round');
+      } else {
+        badgeGroup
+          .append('path')
+          .attr('d', statusIcons[node.stream.status])
+          .attr('transform', 'translate(4, 1)')
+          .attr('stroke', '#ffffff')
+          .attr('stroke-width', 2.5)
+          .attr('stroke-linecap', 'round')
+          .attr('stroke-linejoin', 'round')
+          .attr('fill', 'none');
+      }
 
       // Status label
       badgeGroup
@@ -449,32 +478,77 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         .attr('fill', typeColor)
         .text(typeLabel);
 
-      // Title
-      nodeGroup
-        .append('text')
-        .attr('x', 16)
-        .attr('y', 20)
-        .attr('font-size', '13px')
-        .attr('font-weight', '600')
-        .attr('fill', '#292524')
-        .text(node.stream.title.length > 20
-          ? node.stream.title.substring(0, 20) + '...'
-          : node.stream.title
-        );
+      // Helper to wrap SVG text into multiple lines
+      const wrapText = (
+        parent: d3.Selection<SVGGElement, unknown, null, undefined>,
+        text: string,
+        x: number,
+        y: number,
+        maxWidth: number,
+        fontSize: string,
+        fontWeight: string,
+        fill: string,
+        maxLines: number
+      ) => {
+        const words = text.split(/\s+/);
+        let line = '';
+        let lineNumber = 0;
+        const lineHeight = parseInt(fontSize) + 3;
 
-      // Description preview
+        const tempText = parent.append('text')
+          .attr('font-size', fontSize)
+          .attr('font-weight', fontWeight)
+          .style('visibility', 'hidden');
+
+        words.forEach((word) => {
+          if (lineNumber >= maxLines) return;
+          const testLine = line ? `${line} ${word}` : word;
+          tempText.text(testLine);
+          const testWidth = tempText.node()?.getComputedTextLength() || 0;
+
+          if (testWidth > maxWidth && line) {
+            if (lineNumber === maxLines - 1) {
+              // Last allowed line: truncate with ellipsis
+              let truncated = line;
+              tempText.text(truncated + '...');
+              while ((tempText.node()?.getComputedTextLength() || 0) > maxWidth && truncated.length > 0) {
+                truncated = truncated.slice(0, -1);
+                tempText.text(truncated + '...');
+              }
+              parent.append('text')
+                .attr('x', x).attr('y', y + lineNumber * lineHeight)
+                .attr('font-size', fontSize).attr('font-weight', fontWeight).attr('fill', fill)
+                .text(truncated + '...');
+            } else {
+              parent.append('text')
+                .attr('x', x).attr('y', y + lineNumber * lineHeight)
+                .attr('font-size', fontSize).attr('font-weight', fontWeight).attr('fill', fill)
+                .text(line);
+            }
+            lineNumber++;
+            line = word;
+          } else {
+            line = testLine;
+          }
+        });
+
+        if (line && lineNumber < maxLines) {
+          parent.append('text')
+            .attr('x', x).attr('y', y + lineNumber * lineHeight)
+            .attr('font-size', fontSize).attr('font-weight', fontWeight).attr('fill', fill)
+            .text(line);
+        }
+
+        tempText.remove();
+      };
+
+      // Title (multi-line, up to 2 lines)
+      const titleMaxWidth = node.width - badgeWidth - 36;
+      wrapText(nodeGroup, node.stream.title, 16, 20, titleMaxWidth, '13px', '600', '#292524', 2);
+
+      // Description preview (multi-line, up to 2 lines)
       if (node.stream.description) {
-        nodeGroup
-          .append('text')
-          .attr('x', 16)
-          .attr('y', 44)
-          .attr('font-size', '11px')
-          .attr('fill', '#78716c')
-          .text(
-            node.stream.description.length > 28
-              ? node.stream.description.substring(0, 28) + '...'
-              : node.stream.description
-          );
+        wrapText(nodeGroup, node.stream.description, 16, 48, node.width - 32, '11px', '400', '#78716c', 2);
       }
 
       // Children count
@@ -487,6 +561,15 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           .attr('fill', '#a8a29e')
           .text(`${node.stream.children.length} branch${node.stream.children.length > 1 ? 'es' : ''}`);
       }
+
+      // Tooltip on hover
+      const tooltipContent = [
+        node.stream.title,
+        node.stream.description || '',
+        `Status: ${statusLabels[node.stream.status]} | Type: ${typeLabels[node.stream.source_type]}`,
+      ].filter(Boolean).join('\n');
+
+      nodeGroup.append('title').text(tooltipContent);
 
       // Connection handle (only if status is not 'done')
       if (node.stream.status !== 'done' && onCreateChildSlice) {

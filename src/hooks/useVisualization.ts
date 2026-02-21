@@ -10,9 +10,9 @@ export interface VisualizationConfig {
 }
 
 const defaultConfig: VisualizationConfig = {
-  nodeWidth: 260,
-  nodeHeight: 80,
-  horizontalSpacing: 50,
+  nodeWidth: 320,
+  nodeHeight: 100,
+  horizontalSpacing: 60,
   verticalSpacing: 40,
   padding: 40,
 };
