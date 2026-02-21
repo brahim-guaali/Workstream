@@ -6,12 +6,14 @@ import { statusHexColors, sourceTypeHexColors } from '../../lib/utils';
 
 // SVG path data for status icons (20x20 viewbox, centered)
 const statusIcons = {
+  backlog: 'M6 10h8', // Horizontal line (pause/queue)
   active: 'M10 6v8M6 10h8', // Plus/loading style
   blocked: 'M6 6l8 8M14 6l-8 8', // X mark
   done: 'M5 10l4 4 6-6', // Checkmark
 } as const;
 
 const statusLabels = {
+  backlog: 'Backlog',
   active: 'Active',
   blocked: 'Blocked',
   done: 'Done',
@@ -357,16 +359,21 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
 
       const statusColor = statusHexColors[node.stream.status];
       const typeColor = sourceTypeHexColors[node.stream.source_type];
+      const isSelected = selectedStreamId === node.id;
+      const sw = isSelected ? 2 : 1;
+      const inset = sw / 2;
 
-      // Node background
+      // Node background (inset so stroke stays within node bounds)
       nodeGroup
         .append('rect')
-        .attr('width', node.width)
-        .attr('height', node.height)
+        .attr('x', inset)
+        .attr('y', inset)
+        .attr('width', node.width - sw)
+        .attr('height', node.height - sw)
         .attr('rx', 8)
-        .attr('fill', selectedStreamId === node.id ? '#FFF5ED' : '#ffffff')
-        .attr('stroke', selectedStreamId === node.id ? '#FF5A00' : '#e7e5e4')
-        .attr('stroke-width', selectedStreamId === node.id ? 2 : 1);
+        .attr('fill', isSelected ? '#FFF5ED' : '#ffffff')
+        .attr('stroke', isSelected ? '#FF5A00' : '#e7e5e4')
+        .attr('stroke-width', sw);
 
       // Status indicator - colored left border
       nodeGroup
@@ -389,7 +396,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         .attr('fill', statusColor);
 
       // Status badge with icon and label
-      const badgeWidth = node.stream.status === 'blocked' ? 80 : 70;
+      const badgeWidth = (node.stream.status === 'blocked' || node.stream.status === 'backlog') ? 80 : 70;
       const badgeGroup = nodeGroup
         .append('g')
         .attr('transform', `translate(${node.width - badgeWidth - 8}, 8)`);
@@ -542,9 +549,11 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         tempText.remove();
       };
 
-      // Title (multi-line, up to 2 lines)
+      // Title (multi-line, up to 2 lines) — font size scales with title length
       const titleMaxWidth = node.width - badgeWidth - 36;
-      wrapText(nodeGroup, node.stream.title, 16, 20, titleMaxWidth, '13px', '600', '#292524', 2);
+      const titleLen = node.stream.title.length;
+      const titleFontSize = titleLen <= 15 ? '16px' : titleLen <= 30 ? '14px' : '13px';
+      wrapText(nodeGroup, node.stream.title, 16, 20, titleMaxWidth, titleFontSize, '600', '#292524', 2);
 
       // Description preview (multi-line, up to 2 lines)
       if (node.stream.description) {
@@ -562,11 +571,74 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           .text(`${node.stream.children.length} branch${node.stream.children.length > 1 ? 'es' : ''}`);
       }
 
+      // Dependency tags (bottom-left, compact pills)
+      const deps = node.stream.dependencies || [];
+      if (deps.length > 0) {
+        const maxVisible = 3;
+        const visibleDeps = deps.slice(0, maxVisible);
+        const overflow = deps.length - maxVisible;
+        let depX = node.stream.children.length > 0 ? 16 + (`${node.stream.children.length} branch${node.stream.children.length > 1 ? 'es' : ''}`.length * 6) + 12 : 16;
+
+        visibleDeps.forEach((dep) => {
+          const pillWidth = dep.length * 6 + 12;
+          const pillGroup = nodeGroup
+            .append('g')
+            .attr('transform', `translate(${depX}, ${node.height - 26})`);
+
+          pillGroup
+            .append('rect')
+            .attr('width', pillWidth)
+            .attr('height', 16)
+            .attr('rx', 8)
+            .attr('fill', '#8b5cf6')
+            .attr('opacity', 0.15);
+
+          pillGroup
+            .append('text')
+            .attr('x', pillWidth / 2)
+            .attr('y', 11.5)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '9px')
+            .attr('font-weight', '500')
+            .attr('fill', '#7c3aed')
+            .text(dep);
+
+          depX += pillWidth + 4;
+        });
+
+        if (overflow > 0) {
+          const overflowText = `+${overflow}`;
+          const overflowWidth = overflowText.length * 6 + 10;
+          const overflowGroup = nodeGroup
+            .append('g')
+            .attr('transform', `translate(${depX}, ${node.height - 26})`);
+
+          overflowGroup
+            .append('rect')
+            .attr('width', overflowWidth)
+            .attr('height', 16)
+            .attr('rx', 8)
+            .attr('fill', '#8b5cf6')
+            .attr('opacity', 0.1);
+
+          overflowGroup
+            .append('text')
+            .attr('x', overflowWidth / 2)
+            .attr('y', 11.5)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '9px')
+            .attr('font-weight', '500')
+            .attr('fill', '#a78bfa')
+            .text(overflowText);
+        }
+      }
+
       // Tooltip on hover
       const tooltipContent = [
         node.stream.title,
         node.stream.description || '',
         `Status: ${statusLabels[node.stream.status]} | Type: ${typeLabels[node.stream.source_type]}`,
+        deps.length > 0 ? `Dependencies: ${deps.join(', ')}` : '',
       ].filter(Boolean).join('\n');
 
       nodeGroup.append('title').text(tooltipContent);

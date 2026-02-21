@@ -157,7 +157,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
               className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
             >
               {m.name}: {m.value}{m.target != null ? `/${m.target}` : ''}
-              {m.initialValue !== 0 && m.value !== m.initialValue && (() => {
+              {m.initialValue != null && m.initialValue !== 0 && m.value !== m.initialValue && (() => {
                 const pct = Math.round(((m.value - m.initialValue) / Math.abs(m.initialValue)) * 100);
                 return (
                   <span

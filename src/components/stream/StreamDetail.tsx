@@ -1,10 +1,32 @@
-import { useState } from 'react';
-import { X, Plus, Trash2, MessageSquare, GitBranch, Pencil, Check } from 'lucide-react';
+import { useState, type KeyboardEvent, type ReactNode } from 'react';
+import { X, Plus, Trash2, MessageSquare, GitBranch, Pencil, Check, Tag } from 'lucide-react';
 import type { Stream, StreamEvent, StreamStatus, SourceType } from '../../types/database';
 import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { formatDateTime, getRelativeTime } from '../../lib/utils';
+
+const URL_REGEX = /(https?:\/\/[^\s<]+)/g;
+
+function linkify(text: string): ReactNode {
+  const parts = text.split(URL_REGEX);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) =>
+    URL_REGEX.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-brand-600 dark:text-brand-400 underline hover:text-brand-700 dark:hover:text-brand-300 break-all"
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    )
+  );
+}
 
 interface StreamDetailProps {
   stream: Stream;
@@ -14,10 +36,12 @@ interface StreamDetailProps {
   onUpdateStream: (updates: Partial<Stream>) => Promise<void>;
   onDeleteStream: () => Promise<void>;
   onAddEvent: (content: string) => Promise<void>;
+  onDeleteEvent: (id: string) => Promise<void>;
   onBranch: () => void;
 }
 
 const statusOptions = [
+  { value: 'backlog', label: 'Backlog' },
   { value: 'active', label: 'Active' },
   { value: 'blocked', label: 'Blocked' },
   { value: 'done', label: 'Done' },
@@ -39,6 +63,7 @@ export function StreamDetail({
   onUpdateStream,
   onDeleteStream,
   onAddEvent,
+  onDeleteEvent,
   onBranch,
 }: StreamDetailProps) {
   const [newNote, setNewNote] = useState('');
@@ -50,6 +75,7 @@ export function StreamDetail({
   const [editedDate, setEditedDate] = useState(
     new Date(stream.created_at).toISOString().slice(0, 16)
   );
+  const [newDependency, setNewDependency] = useState('');
 
   const handleStatusChange = async (status: StreamStatus) => {
     await onUpdateStream({ status });
@@ -79,6 +105,28 @@ export function StreamDetail({
   const handleCancelEditDate = () => {
     setEditedDate(new Date(stream.created_at).toISOString().slice(0, 16));
     setIsEditingDate(false);
+  };
+
+  const handleAddDependency = async () => {
+    const tag = newDependency.trim();
+    if (!tag) return;
+    if (stream.dependencies.includes(tag)) {
+      setNewDependency('');
+      return;
+    }
+    await onUpdateStream({ dependencies: [...stream.dependencies, tag] });
+    setNewDependency('');
+  };
+
+  const handleRemoveDependency = async (tag: string) => {
+    await onUpdateStream({ dependencies: stream.dependencies.filter((d) => d !== tag) });
+  };
+
+  const handleDependencyKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddDependency();
+    }
   };
 
   const handleAddNote = async () => {
@@ -235,6 +283,47 @@ export function StreamDetail({
           </div>
         )}
 
+        {/* Dependencies */}
+        <div>
+          <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+            <Tag className="w-4 h-4 inline-block mr-1 -mt-0.5" />
+            Dependencies
+          </h3>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {stream.dependencies.length === 0 && (
+              <p className="text-sm text-stone-400 dark:text-stone-500">No dependencies</p>
+            )}
+            {stream.dependencies.map((dep) => (
+              <span
+                key={dep}
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
+              >
+                {dep}
+                <button
+                  onClick={() => handleRemoveDependency(dep)}
+                  className="ml-0.5 hover:text-violet-900 dark:hover:text-violet-100"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newDependency}
+              onChange={(e) => setNewDependency(e.target.value)}
+              onKeyDown={handleDependencyKeyDown}
+              placeholder="e.g. Team Backend, QA..."
+              className="flex-1 px-3 py-1.5 text-sm bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 rounded-md text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+            <Button size="sm" variant="secondary" onClick={handleAddDependency} disabled={!newDependency.trim()}>
+              <Plus className="w-4 h-4 mr-1" />
+              Add
+            </Button>
+          </div>
+        </div>
+
         {/* Actions */}
         <div className="flex gap-2">
           <Button size="sm" variant="secondary" onClick={onBranch}>
@@ -289,18 +378,26 @@ export function StreamDetail({
               {events.map((event) => (
                 <div
                   key={event.id}
-                  className="flex gap-3 text-sm"
+                  className="flex gap-3 text-sm group/event"
                 >
                   <div className="flex-shrink-0 mt-0.5 text-stone-400">
                     {getEventIcon(event.type)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-stone-700 dark:text-stone-300 whitespace-pre-wrap">
-                      {event.content}
+                      {linkify(event.content)}
                     </p>
-                    <p className="mt-1 text-xs text-stone-400">
-                      {getRelativeTime(event.created_at)}
-                    </p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <p className="text-xs text-stone-400">
+                        {getRelativeTime(event.created_at)}
+                      </p>
+                      <button
+                        onClick={() => onDeleteEvent(event.id)}
+                        className="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300 opacity-0 group-hover/event:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

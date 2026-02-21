@@ -45,7 +45,7 @@ export function ProjectPage() {
   const [promptNewValue, setPromptNewValue] = useState('');
   const [promptNewTarget, setPromptNewTarget] = useState('');
 
-  const { events, loading: eventsLoading, createEvent } = useEvents(projectId, selectedStream?.id);
+  const { events, loading: eventsLoading, createEvent, deleteEvent } = useEvents(projectId, selectedStream?.id);
 
   // Compute stream statistics (count leaf nodes - streams with no children)
   const stats = useMemo(() => {
@@ -440,7 +440,7 @@ export function ProjectPage() {
                   }}
                 >
                   {m.name}: {m.value}{m.target != null ? ` / ${m.target}` : ''}
-                  {m.initialValue !== 0 && m.value !== m.initialValue && (() => {
+                  {m.initialValue != null && m.initialValue !== 0 && m.value !== m.initialValue && (() => {
                     const pct = Math.round(((m.value - m.initialValue) / Math.abs(m.initialValue)) * 100);
                     return (
                       <span
@@ -568,6 +568,7 @@ export function ProjectPage() {
                 onUpdateStream={handleUpdateStream}
                 onDeleteStream={handleDeleteStream}
                 onAddEvent={handleAddEvent}
+                onDeleteEvent={deleteEvent}
                 onBranch={handleBranch}
               />
             </div>

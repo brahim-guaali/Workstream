@@ -42,7 +42,10 @@ export function useProject(projectId: string | undefined) {
           id: snap.id,
           name: data.name,
           description: data.description,
-          metrics: data.metrics ?? [],
+          metrics: (data.metrics ?? []).map((m: Record<string, unknown>) => ({
+            ...m,
+            initialValue: m.initialValue ?? m.value,
+          })),
           user_id: user.uid,
           created_at: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
           updated_at: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
@@ -106,7 +109,10 @@ export function useProjects() {
             id: doc.id,
             name: data.name,
             description: data.description,
-            metrics: data.metrics ?? [],
+            metrics: (data.metrics ?? []).map((m: Record<string, unknown>) => ({
+              ...m,
+              initialValue: m.initialValue ?? m.value,
+            })),
             user_id: user.uid,
             created_at: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
             updated_at: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
