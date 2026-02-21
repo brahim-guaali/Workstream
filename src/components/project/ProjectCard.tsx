@@ -157,19 +157,20 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
               className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
             >
               {m.name}: {m.value}{m.target != null ? `/${m.target}` : ''}
-              {m.target != null && m.target !== 0 && (
-                <span
-                  className={`text-[10px] font-semibold ${
-                    m.value >= m.target
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : m.value >= m.target * 0.7
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-stone-400 dark:text-stone-500'
-                  }`}
-                >
-                  {Math.round((m.value / m.target) * 100)}%
-                </span>
-              )}
+              {m.initialValue !== 0 && m.value !== m.initialValue && (() => {
+                const pct = Math.round(((m.value - m.initialValue) / Math.abs(m.initialValue)) * 100);
+                return (
+                  <span
+                    className={`text-[10px] font-semibold ${
+                      pct > 0
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-red-500 dark:text-red-400'
+                    }`}
+                  >
+                    {pct > 0 ? '+' : ''}{pct}%
+                  </span>
+                );
+              })()}
             </span>
           ))}
           {project.metrics.length > 3 && (

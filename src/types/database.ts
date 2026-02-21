@@ -7,6 +7,7 @@ export interface ProjectMetric {
   id: string;
   name: string;
   value: number;
+  initialValue: number;
   target?: number;
 }
 

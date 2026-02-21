@@ -209,10 +209,12 @@ export function ProjectPage() {
   const handleAddMetric = () => {
     if (!newMetricName.trim() || !newMetricValue.trim()) return;
     const metrics = [...(project?.metrics ?? [])];
+    const val = Number(newMetricValue);
     const metric: ProjectMetric = {
       id: crypto.randomUUID(),
       name: newMetricName.trim(),
-      value: Number(newMetricValue),
+      value: val,
+      initialValue: val,
       ...(newMetricTarget.trim() ? { target: Number(newMetricTarget) } : {}),
     };
     metrics.push(metric);
@@ -251,12 +253,14 @@ export function ProjectPage() {
 
   const handlePromptAddMetric = () => {
     if (!promptNewName.trim() || !promptNewValue.trim()) return;
+    const val = Number(promptNewValue);
     setPromptMetrics((prev) => [
       ...prev,
       {
         id: crypto.randomUUID(),
         name: promptNewName.trim(),
-        value: Number(promptNewValue),
+        value: val,
+        initialValue: val,
         ...(promptNewTarget.trim() ? { target: Number(promptNewTarget) } : {}),
       },
     ]);
@@ -436,19 +440,20 @@ export function ProjectPage() {
                   }}
                 >
                   {m.name}: {m.value}{m.target != null ? ` / ${m.target}` : ''}
-                  {m.target != null && m.target !== 0 && (
-                    <span
-                      className={`ml-0.5 text-[10px] font-semibold ${
-                        m.value >= m.target
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : m.value >= m.target * 0.7
-                            ? 'text-amber-600 dark:text-amber-400'
-                            : 'text-stone-400 dark:text-stone-500'
-                      }`}
-                    >
-                      {Math.round((m.value / m.target) * 100)}%
-                    </span>
-                  )}
+                  {m.initialValue !== 0 && m.value !== m.initialValue && (() => {
+                    const pct = Math.round(((m.value - m.initialValue) / Math.abs(m.initialValue)) * 100);
+                    return (
+                      <span
+                        className={`ml-0.5 text-[10px] font-semibold ${
+                          pct > 0
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-red-500 dark:text-red-400'
+                        }`}
+                      >
+                        {pct > 0 ? '+' : ''}{pct}%
+                      </span>
+                    );
+                  })()}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
