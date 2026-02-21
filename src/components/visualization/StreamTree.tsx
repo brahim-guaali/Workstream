@@ -553,7 +553,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       const titleMaxWidth = node.width - badgeWidth - 36;
       const titleLen = node.stream.title.length;
       const titleFontSize = titleLen <= 15 ? '16px' : titleLen <= 30 ? '14px' : '13px';
-      wrapText(nodeGroup, node.stream.title, 16, 20, titleMaxWidth, titleFontSize, '600', '#292524', 2);
+      wrapText(nodeGroup, node.stream.title, 16, 20, titleMaxWidth, titleFontSize, '600', '#292524', 3);
 
       // Description preview (multi-line, up to 2 lines)
       if (node.stream.description) {
