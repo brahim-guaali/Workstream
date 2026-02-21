@@ -1,5 +1,6 @@
 import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import * as d3 from 'd3';
+import { ZoomIn, ZoomOut, Move, Hand } from 'lucide-react';
 import type { StreamWithChildren } from '../../types/database';
 import { useVisualization } from '../../hooks/useVisualization';
 import { statusHexColors, sourceTypeHexColors } from '../../lib/utils';
@@ -51,6 +52,8 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { layout, zoom, pan, setPan, setZoom } = useVisualization(streamTree);
+  const [freePan, setFreePan] = useState(false);
+  const lastMousePos = useRef<{ x: number; y: number } | null>(null);
 
   useImperativeHandle(ref, () => ({
     resetView: () => {
@@ -775,6 +778,31 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       .on('drag', handleCanvasDrag);
     svg.call(canvasDrag);
 
+    // Scroll-wheel zoom
+    const svgEl = svgRef.current;
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = -e.deltaY * 0.001;
+      setZoom((prev) => Math.min(3, Math.max(0.2, prev + delta)));
+    };
+    svgEl.addEventListener('wheel', handleWheel, { passive: false });
+
+    // Free-pan: move canvas by moving the mouse (no click needed)
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!freePan) return;
+      if (lastMousePos.current) {
+        const dx = e.clientX - lastMousePos.current.x;
+        const dy = e.clientY - lastMousePos.current.y;
+        setPan((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+      }
+      lastMousePos.current = { x: e.clientX, y: e.clientY };
+    };
+    const handleMouseLeave = () => {
+      lastMousePos.current = null;
+    };
+    svgEl.addEventListener('mousemove', handleMouseMove);
+    svgEl.addEventListener('mouseleave', handleMouseLeave);
+
     // Render pending slice placeholder
     if (pendingSlice) {
       const parentNode = layout.nodes.find(n => n.id === pendingSlice.parentId);
@@ -833,16 +861,57 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       }
     }
 
-  }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice, pendingSlice, focusedNodeIds]);
+    return () => {
+      svgEl.removeEventListener('wheel', handleWheel);
+      svgEl.removeEventListener('mousemove', handleMouseMove);
+      svgEl.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice, pendingSlice, focusedNodeIds, freePan, setZoom, setPan]);
 
   return (
-    <div ref={containerRef} className="w-full h-full overflow-hidden bg-stone-50 dark:bg-stone-950">
+    <div ref={containerRef} className="relative w-full h-full overflow-hidden bg-stone-50 dark:bg-stone-950">
       <svg
         ref={svgRef}
         width="100%"
         height="100%"
-        style={{ minHeight: layout.height, minWidth: layout.width }}
+        style={{ minHeight: layout.height, minWidth: layout.width, cursor: freePan ? 'move' : undefined }}
       />
+
+      {/* Zoom & pan controls */}
+      <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg p-1">
+        <button
+          onClick={() => setZoom((z) => Math.min(3, z + 0.15))}
+          className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors"
+          title="Zoom in"
+        >
+          <ZoomIn className="w-4 h-4" />
+        </button>
+        <span className="text-xs font-medium text-stone-500 dark:text-stone-400 w-10 text-center select-none">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button
+          onClick={() => setZoom((z) => Math.max(0.2, z - 0.15))}
+          className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors"
+          title="Zoom out"
+        >
+          <ZoomOut className="w-4 h-4" />
+        </button>
+        <div className="w-px h-5 bg-stone-200 dark:bg-stone-700 mx-0.5" />
+        <button
+          onClick={() => {
+            setFreePan((v) => !v);
+            lastMousePos.current = null;
+          }}
+          className={`p-2 rounded-lg transition-colors ${
+            freePan
+              ? 'bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400'
+              : 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300'
+          }`}
+          title={freePan ? 'Switch to drag mode' : 'Switch to free pan mode'}
+        >
+          {freePan ? <Move className="w-4 h-4" /> : <Hand className="w-4 h-4" />}
+        </button>
+      </div>
     </div>
   );
 });
