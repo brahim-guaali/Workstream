@@ -49,36 +49,40 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
     setShowMenu(false);
   };
 
+  const totalWithStatus = (statusCounts.active || 0) + (statusCounts.blocked || 0) + (statusCounts.done || 0);
+  const donePercent = totalWithStatus > 0 ? Math.round(((statusCounts.done || 0) / totalWithStatus) * 100) : 0;
+
   return (
-    <div className="relative group p-4 rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-md transition-all">
-      <div className="flex items-start justify-between">
+    <div className="relative group h-full flex flex-col p-5 rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-lg hover:shadow-brand-500/5 transition-all duration-200">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-stone-900 dark:text-stone-100 truncate">
+          <h3 className="font-semibold text-stone-900 dark:text-stone-100 truncate text-base">
             {project.name}
           </h3>
           {project.description && (
-            <p className="mt-1 text-sm text-stone-500 dark:text-stone-400 line-clamp-2">
+            <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-400 line-clamp-2 leading-relaxed">
               {project.description}
             </p>
           )}
         </div>
-        <div className="relative">
+        <div className="relative flex-shrink-0">
           <button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setShowMenu(!showMenu);
             }}
-            className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 opacity-0 group-hover:opacity-100 transition-opacity"
           >
-            <MoreVertical className="w-4 h-4 text-stone-500" />
+            <MoreVertical className="w-4 h-4 text-stone-400" />
           </button>
           {showMenu && (
-            <div className="absolute right-0 mt-1 w-36 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 shadow-lg z-10">
+            <div className="absolute right-0 mt-1 w-36 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 shadow-xl z-10">
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
                 {isDeleting ? 'Deleting...' : 'Delete'}
@@ -88,34 +92,99 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
         </div>
       </div>
 
+      {/* Spacer to push stats/dates to bottom */}
+      <div className="flex-1" />
+
+      {/* Progress bar */}
+      {totalWithStatus > 0 && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-medium text-stone-500 dark:text-stone-400">Progress</span>
+            <span className="text-xs font-medium text-stone-500 dark:text-stone-400">{donePercent}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-stone-100 dark:bg-stone-800 overflow-hidden flex">
+            {statusCounts.done > 0 && (
+              <div
+                className="h-full bg-emerald-500 transition-all duration-500"
+                style={{ width: `${(statusCounts.done / totalWithStatus) * 100}%` }}
+              />
+            )}
+            {statusCounts.active > 0 && (
+              <div
+                className="h-full bg-blue-500 transition-all duration-500"
+                style={{ width: `${(statusCounts.active / totalWithStatus) * 100}%` }}
+              />
+            )}
+            {statusCounts.blocked > 0 && (
+              <div
+                className="h-full bg-amber-500 transition-all duration-500"
+                style={{ width: `${(statusCounts.blocked / totalWithStatus) * 100}%` }}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Stream stats */}
-      <div className="mt-3 flex items-center gap-3">
-        <span className="flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400">
-          <GitBranch className="w-3.5 h-3.5" />
+      <div className="mt-4 flex items-center gap-2 flex-wrap">
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 px-2 py-1 rounded-lg">
+          <GitBranch className="w-3 h-3" />
           {streamCount} stream{streamCount !== 1 ? 's' : ''}
         </span>
         {statusCounts.active > 0 && (
-          <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+          <span className="text-xs font-medium px-2 py-1 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
             {statusCounts.active} active
           </span>
         )}
         {statusCounts.blocked > 0 && (
-          <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+          <span className="text-xs font-medium px-2 py-1 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
             {statusCounts.blocked} blocked
           </span>
         )}
         {statusCounts.done > 0 && (
-          <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
+          <span className="text-xs font-medium px-2 py-1 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
             {statusCounts.done} done
           </span>
         )}
       </div>
 
-      {/* Dates */}
-      <div className="mt-2 flex items-center gap-3 text-xs text-stone-400 dark:text-stone-500">
+      {/* Metrics */}
+      {project.metrics && project.metrics.length > 0 && (
+        <div className="mt-3 flex items-center gap-1.5 flex-wrap">
+          {project.metrics.slice(0, 3).map((m) => (
+            <span
+              key={m.id}
+              className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
+            >
+              {m.name}: {m.value}{m.target != null ? `/${m.target}` : ''}
+              {m.target != null && m.target !== 0 && (
+                <span
+                  className={`text-[10px] font-semibold ${
+                    m.value >= m.target
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : m.value >= m.target * 0.7
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-stone-400 dark:text-stone-500'
+                  }`}
+                >
+                  {Math.round((m.value / m.target) * 100)}%
+                </span>
+              )}
+            </span>
+          ))}
+          {project.metrics.length > 3 && (
+            <span className="text-xs text-stone-400 dark:text-stone-500">
+              +{project.metrics.length - 3} more
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Divider + Dates */}
+      <div className="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs text-stone-400 dark:text-stone-500">
         <span className="flex items-center gap-1">
           <Calendar className="w-3 h-3" />
-          Created {formatDate(project.created_at)}
+          {formatDate(project.created_at)}
         </span>
         <span>Updated {getRelativeTime(project.updated_at)}</span>
       </div>

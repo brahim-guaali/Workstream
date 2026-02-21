@@ -12,12 +12,14 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import type { Project } from '../types/database';
+import type { Project, ProjectMetric } from '../types/database';
 
 type ProjectInput = {
   name: string;
   description: string | null;
 };
+
+type ProjectUpdates = Partial<Project> & { metrics?: ProjectMetric[] };
 
 export function useProject(projectId: string | undefined) {
   const { user } = useAuth();
@@ -40,6 +42,7 @@ export function useProject(projectId: string | undefined) {
           id: snap.id,
           name: data.name,
           description: data.description,
+          metrics: data.metrics ?? [],
           user_id: user.uid,
           created_at: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
           updated_at: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
@@ -54,7 +57,7 @@ export function useProject(projectId: string | undefined) {
   }, [user, projectId]);
 
   const updateProject = useCallback(
-    async (updates: Partial<Project>) => {
+    async (updates: ProjectUpdates) => {
       if (!user || !projectId) throw new Error('Not authenticated');
 
       const projectRef = doc(db, 'users', user.uid, 'projects', projectId);
@@ -63,6 +66,7 @@ export function useProject(projectId: string | undefined) {
       };
       if (updates.name !== undefined) updateData.name = updates.name;
       if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.metrics !== undefined) updateData.metrics = updates.metrics;
 
       await updateDoc(projectRef, updateData);
     },
@@ -102,6 +106,7 @@ export function useProjects() {
             id: doc.id,
             name: data.name,
             description: data.description,
+            metrics: data.metrics ?? [],
             user_id: user.uid,
             created_at: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
             updated_at: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
@@ -127,6 +132,7 @@ export function useProjects() {
       const docRef = await addDoc(projectsRef, {
         name: project.name,
         description: project.description,
+        metrics: [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -135,6 +141,7 @@ export function useProjects() {
         id: docRef.id,
         name: project.name,
         description: project.description,
+        metrics: [],
         user_id: user.uid,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -144,7 +151,7 @@ export function useProjects() {
   );
 
   const updateProject = useCallback(
-    async (id: string, updates: Partial<Project>) => {
+    async (id: string, updates: ProjectUpdates) => {
       if (!user) throw new Error('Not authenticated');
 
       const projectRef = doc(db, 'users', user.uid, 'projects', id);
@@ -153,6 +160,7 @@ export function useProjects() {
       };
       if (updates.name !== undefined) updateData.name = updates.name;
       if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.metrics !== undefined) updateData.metrics = updates.metrics;
 
       await updateDoc(projectRef, updateData);
 

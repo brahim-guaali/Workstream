@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Upload, Crosshair, Pencil } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Crosshair, Pencil, X, Check, BarChart3 } from 'lucide-react';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -13,7 +13,7 @@ import { useStreams } from '../hooks/useStreams';
 import { useEvents } from '../hooks/useEvents';
 import { useProject } from '../hooks/useProjects';
 import { statusHexColors, sourceTypeHexColors } from '../lib/utils';
-import type { StreamWithChildren, SourceType, StreamStatus } from '../types/database';
+import type { StreamWithChildren, SourceType, StreamStatus, ProjectMetric } from '../types/database';
 
 export function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -30,12 +30,26 @@ export function ProjectPage() {
   const [newSlicePosition, setNewSlicePosition] = useState<{ x: number; y: number } | null>(null);
   const [pendingSlice, setPendingSlice] = useState<{ parentId: string; position: { x: number; y: number } } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [isAddingMetric, setIsAddingMetric] = useState(false);
+  const [newMetricName, setNewMetricName] = useState('');
+  const [newMetricValue, setNewMetricValue] = useState('');
+  const [newMetricTarget, setNewMetricTarget] = useState('');
+  const [editingMetricId, setEditingMetricId] = useState<string | null>(null);
+  const [editMetricName, setEditMetricName] = useState('');
+  const [editMetricValue, setEditMetricValue] = useState('');
+  const [editMetricTarget, setEditMetricTarget] = useState('');
+  const [metricsPromptOpen, setMetricsPromptOpen] = useState(false);
+  const [metricsPromptStreamName, setMetricsPromptStreamName] = useState('');
+  const [promptMetrics, setPromptMetrics] = useState<ProjectMetric[]>([]);
+  const [promptNewName, setPromptNewName] = useState('');
+  const [promptNewValue, setPromptNewValue] = useState('');
+  const [promptNewTarget, setPromptNewTarget] = useState('');
 
   const { events, loading: eventsLoading, createEvent } = useEvents(projectId, selectedStream?.id);
 
   // Compute stream statistics (count leaf nodes - streams with no children)
   const stats = useMemo(() => {
-    const byStatus: Record<StreamStatus, number> = { active: 0, blocked: 0, done: 0 };
+    const byStatus: Record<StreamStatus, number> = { backlog: 0, active: 0, blocked: 0, done: 0 };
     const byType: Record<SourceType, number> = { task: 0, investigation: 0, meeting: 0, blocker: 0, discovery: 0 };
 
     // Find IDs of streams that are parents (have children)
@@ -100,6 +114,13 @@ export function ProjectPage() {
     if (!selectedStream) return;
     const updated = await updateStream(selectedStream.id, updates);
     setSelectedStream({ ...selectedStream, ...updated });
+
+    // When a stream is marked done, prompt user to update metrics
+    if (updates.status === 'done' && selectedStream.status !== 'done') {
+      setMetricsPromptStreamName(selectedStream.title);
+      setPromptMetrics((project?.metrics ?? []).map((m) => ({ ...m })));
+      setMetricsPromptOpen(true);
+    }
   };
 
   const handleDeleteStream = async () => {
@@ -185,22 +206,63 @@ export function ProjectPage() {
     }
   };
 
-  const handleLoadExample = async () => {
-    setIsImporting(true);
-    try {
-      // Clear existing streams first
-      for (const stream of streams) {
-        await deleteStream(stream.id);
-      }
-      const response = await fetch('/examples/api-migration.json');
-      const data = await response.json();
-      await importProject(data);
-    } catch (err) {
-      console.error('Failed to load example:', err);
-      alert('Failed to load example: ' + (err instanceof Error ? err.message : 'Unknown error'));
-    } finally {
-      setIsImporting(false);
-    }
+  const handleAddMetric = () => {
+    if (!newMetricName.trim() || !newMetricValue.trim()) return;
+    const metrics = [...(project?.metrics ?? [])];
+    const metric: ProjectMetric = {
+      id: crypto.randomUUID(),
+      name: newMetricName.trim(),
+      value: Number(newMetricValue),
+      ...(newMetricTarget.trim() ? { target: Number(newMetricTarget) } : {}),
+    };
+    metrics.push(metric);
+    updateProject({ metrics });
+    setNewMetricName('');
+    setNewMetricValue('');
+    setNewMetricTarget('');
+    setIsAddingMetric(false);
+  };
+
+  const handleUpdateMetric = (id: string) => {
+    if (!editMetricName.trim() || !editMetricValue.trim()) return;
+    const metrics = (project?.metrics ?? []).map((m) =>
+      m.id === id
+        ? {
+            ...m,
+            name: editMetricName.trim(),
+            value: Number(editMetricValue),
+            ...(editMetricTarget.trim() ? { target: Number(editMetricTarget) } : { target: undefined }),
+          }
+        : m
+    );
+    updateProject({ metrics });
+    setEditingMetricId(null);
+  };
+
+  const handleRemoveMetric = (id: string) => {
+    const metrics = (project?.metrics ?? []).filter((m) => m.id !== id);
+    updateProject({ metrics });
+  };
+
+  const handlePromptSave = () => {
+    updateProject({ metrics: promptMetrics });
+    setMetricsPromptOpen(false);
+  };
+
+  const handlePromptAddMetric = () => {
+    if (!promptNewName.trim() || !promptNewValue.trim()) return;
+    setPromptMetrics((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        name: promptNewName.trim(),
+        value: Number(promptNewValue),
+        ...(promptNewTarget.trim() ? { target: Number(promptNewTarget) } : {}),
+      },
+    ]);
+    setPromptNewName('');
+    setPromptNewValue('');
+    setPromptNewTarget('');
   };
 
   if (loading || isImporting) {
@@ -322,6 +384,139 @@ export function ProjectPage() {
               )}
             </div>
           )}
+
+          {/* Metrics row */}
+          <div className="px-4 pb-2.5 flex flex-wrap items-center gap-2 text-sm">
+            {(project?.metrics ?? []).map((m) =>
+              editingMetricId === m.id ? (
+                <div key={m.id} className="flex items-center gap-1.5">
+                  <input
+                    className="w-24 px-2 py-1 text-xs rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    value={editMetricName}
+                    onChange={(e) => setEditMetricName(e.target.value)}
+                    placeholder="Name"
+                    autoFocus
+                  />
+                  <input
+                    type="number"
+                    className="w-16 px-2 py-1 text-xs rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    value={editMetricValue}
+                    onChange={(e) => setEditMetricValue(e.target.value)}
+                    placeholder="Value"
+                  />
+                  <input
+                    type="number"
+                    className="w-16 px-2 py-1 text-xs rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    value={editMetricTarget}
+                    onChange={(e) => setEditMetricTarget(e.target.value)}
+                    placeholder="Target"
+                  />
+                  <button
+                    onClick={() => handleUpdateMetric(m.id)}
+                    className="p-1 rounded-lg hover:bg-cyan-100 dark:hover:bg-cyan-900/30 text-cyan-600"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setEditingMetricId(null)}
+                    className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <span
+                  key={m.id}
+                  className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 cursor-pointer hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors group/metric"
+                  onClick={() => {
+                    setEditingMetricId(m.id);
+                    setEditMetricName(m.name);
+                    setEditMetricValue(String(m.value));
+                    setEditMetricTarget(m.target != null ? String(m.target) : '');
+                  }}
+                >
+                  {m.name}: {m.value}{m.target != null ? ` / ${m.target}` : ''}
+                  {m.target != null && m.target !== 0 && (
+                    <span
+                      className={`ml-0.5 text-[10px] font-semibold ${
+                        m.value >= m.target
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : m.value >= m.target * 0.7
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-stone-400 dark:text-stone-500'
+                      }`}
+                    >
+                      {Math.round((m.value / m.target) * 100)}%
+                    </span>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveMetric(m.id);
+                    }}
+                    className="ml-0.5 p-0.5 rounded hover:bg-cyan-200 dark:hover:bg-cyan-800 opacity-0 group-hover/metric:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )
+            )}
+
+            {isAddingMetric ? (
+              <div className="flex items-center gap-1.5">
+                <input
+                  className="w-24 px-2 py-1 text-xs rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  value={newMetricName}
+                  onChange={(e) => setNewMetricName(e.target.value)}
+                  placeholder="Name"
+                  autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddMetric()}
+                />
+                <input
+                  type="number"
+                  className="w-16 px-2 py-1 text-xs rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  value={newMetricValue}
+                  onChange={(e) => setNewMetricValue(e.target.value)}
+                  placeholder="Value"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddMetric()}
+                />
+                <input
+                  type="number"
+                  className="w-16 px-2 py-1 text-xs rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  value={newMetricTarget}
+                  onChange={(e) => setNewMetricTarget(e.target.value)}
+                  placeholder="Target"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddMetric()}
+                />
+                <button
+                  onClick={handleAddMetric}
+                  disabled={!newMetricName.trim() || !newMetricValue.trim()}
+                  className="p-1 rounded-lg hover:bg-cyan-100 dark:hover:bg-cyan-900/30 text-cyan-600 disabled:opacity-40"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    setIsAddingMetric(false);
+                    setNewMetricName('');
+                    setNewMetricValue('');
+                    setNewMetricTarget('');
+                  }}
+                  className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAddingMetric(true)}
+                className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border border-dashed border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-colors"
+              >
+                <BarChart3 className="w-3 h-3" />
+                Add Metric
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Main content */}
@@ -339,17 +534,10 @@ export function ProjectPage() {
                 <p className="text-stone-500 dark:text-stone-400 mb-4 max-w-sm">
                   Start by creating your first stream to track your project's evolution
                 </p>
-                <div className="flex items-center gap-3">
-                  <Button onClick={handleOpenAddModal}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create First Stream
-                  </Button>
-                  <span className="text-stone-400">or</span>
-                  <Button variant="secondary" onClick={handleLoadExample}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Load Example
-                  </Button>
-                </div>
+                <Button onClick={handleOpenAddModal}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Stream
+                </Button>
               </div>
             ) : (
               <StreamTree
@@ -394,6 +582,93 @@ export function ProjectPage() {
         streams={streamTree}
         defaultParentId={branchFromStreamId}
       />
+
+      {/* Update Metrics Prompt (shown when a stream is marked done) */}
+      <Modal
+        isOpen={metricsPromptOpen}
+        onClose={() => setMetricsPromptOpen(false)}
+        title="Update Metrics"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-stone-500 dark:text-stone-400">
+            <span className="font-medium text-stone-700 dark:text-stone-300">{metricsPromptStreamName}</span> is done. Would you like to update project metrics?
+          </p>
+
+          {promptMetrics.length > 0 && (
+            <div className="space-y-2">
+              {promptMetrics.map((m, idx) => (
+                <div key={m.id} className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-stone-700 dark:text-stone-300 w-28 truncate" title={m.name}>
+                    {m.name}
+                  </span>
+                  <input
+                    type="number"
+                    className="w-20 px-2 py-1.5 text-sm rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    value={m.value}
+                    onChange={(e) => {
+                      setPromptMetrics((prev) =>
+                        prev.map((pm, i) => (i === idx ? { ...pm, value: Number(e.target.value) } : pm))
+                      );
+                    }}
+                  />
+                  {m.target != null && (
+                    <span className="text-sm text-stone-400">/ {m.target}</span>
+                  )}
+                  <button
+                    onClick={() => setPromptMetrics((prev) => prev.filter((_, i) => i !== idx))}
+                    className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              className="w-28 px-2 py-1.5 text-sm rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              value={promptNewName}
+              onChange={(e) => setPromptNewName(e.target.value)}
+              placeholder="Name"
+              onKeyDown={(e) => e.key === 'Enter' && handlePromptAddMetric()}
+            />
+            <input
+              type="number"
+              className="w-20 px-2 py-1.5 text-sm rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              value={promptNewValue}
+              onChange={(e) => setPromptNewValue(e.target.value)}
+              placeholder="Value"
+              onKeyDown={(e) => e.key === 'Enter' && handlePromptAddMetric()}
+            />
+            <input
+              type="number"
+              className="w-20 px-2 py-1.5 text-sm rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              value={promptNewTarget}
+              onChange={(e) => setPromptNewTarget(e.target.value)}
+              placeholder="Target"
+              onKeyDown={(e) => e.key === 'Enter' && handlePromptAddMetric()}
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handlePromptAddMetric}
+              disabled={!promptNewName.trim() || !promptNewValue.trim()}
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={() => setMetricsPromptOpen(false)}>
+              Skip
+            </Button>
+            <Button onClick={handlePromptSave}>
+              Save Metrics
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Edit Project Modal */}
       <Modal isOpen={isEditingProject} onClose={() => setIsEditingProject(false)} title="Edit Project">

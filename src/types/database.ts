@@ -1,12 +1,20 @@
-export type StreamStatus = 'active' | 'blocked' | 'done';
+export type StreamStatus = 'backlog' | 'active' | 'blocked' | 'done';
 export type SourceType = 'investigation' | 'meeting' | 'blocker' | 'discovery' | 'task';
 export type EventType = 'note' | 'status_change' | 'artifact_link' | 'created';
 export type ArtifactType = 'pr' | 'ticket' | 'doc' | 'link';
+
+export interface ProjectMetric {
+  id: string;
+  name: string;
+  value: number;
+  target?: number;
+}
 
 export interface Project {
   id: string;
   name: string;
   description: string | null;
+  metrics: ProjectMetric[];
   created_at: string;
   updated_at: string;
   user_id: string;
@@ -26,6 +34,7 @@ export interface Stream {
   branched_from_event_id: string | null;
   position_x?: number;
   position_y?: number;
+  dependencies: string[];
 }
 
 export interface StreamEvent {
