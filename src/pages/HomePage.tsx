@@ -14,7 +14,7 @@ export function HomePage() {
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-6 py-10">
         <ProjectList
           projects={projects}
           loading={loading}

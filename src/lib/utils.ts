@@ -80,18 +80,21 @@ export function getRelativeTime(dateString: string): string {
 }
 
 export const statusColors = {
+  backlog: 'bg-stone-400',
   active: 'bg-green-500',
   blocked: 'bg-amber-500',
   done: 'bg-slate-400',
 } as const;
 
 export const statusHexColors = {
-  active: '#3b82f6',  // Blue for in-progress
+  backlog: '#a8a29e',  // Stone/gray for backlog
+  active: '#3b82f6',   // Blue for in-progress
   blocked: '#f59e0b',
-  done: '#22c55e',    // Green for completed
+  done: '#22c55e',     // Green for completed
 } as const;
 
 export const statusLabels = {
+  backlog: 'Backlog',
   active: 'Active',
   blocked: 'Blocked',
   done: 'Done',

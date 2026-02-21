@@ -69,6 +69,7 @@ export function useStreams(projectId: string | undefined) {
             branched_from_event_id: data.branchedFromEventId || null,
             position_x: data.positionX ?? undefined,
             position_y: data.positionY ?? undefined,
+            dependencies: data.dependencies ?? [],
           };
         });
         setStreams(streamList);
@@ -96,6 +97,7 @@ export function useStreams(projectId: string | undefined) {
         sourceType: stream.source_type,
         parentStreamId: stream.parent_stream_id,
         branchedFromEventId: stream.branched_from_event_id,
+        dependencies: [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -112,6 +114,7 @@ export function useStreams(projectId: string | undefined) {
         updated_at: new Date().toISOString(),
         created_by: user.uid,
         branched_from_event_id: stream.branched_from_event_id,
+        dependencies: [],
       } as Stream;
     },
     [user]
@@ -133,6 +136,7 @@ export function useStreams(projectId: string | undefined) {
       if (updates.created_at !== undefined) updateData.createdAt = new Date(updates.created_at);
       if (updates.position_x !== undefined) updateData.positionX = updates.position_x;
       if (updates.position_y !== undefined) updateData.positionY = updates.position_y;
+      if (updates.dependencies !== undefined) updateData.dependencies = updates.dependencies;
 
       await updateDoc(streamRef, updateData);
 
@@ -168,6 +172,7 @@ export function useStreams(projectId: string | undefined) {
     created_at: string;
     position_x?: number;
     position_y?: number;
+    dependencies: string[];
     events: Array<{
       type: string;
       content: string;
@@ -225,6 +230,7 @@ export function useStreams(projectId: string | undefined) {
           created_at: stream.created_at,
           position_x: stream.position_x,
           position_y: stream.position_y,
+          dependencies: stream.dependencies,
           events: streamEventsMap.get(stream.id) || [],
           children: buildExportTree(stream.id),
         }));
@@ -246,6 +252,7 @@ export function useStreams(projectId: string | undefined) {
     created_at: string;
     position_x?: number;
     position_y?: number;
+    dependencies?: string[];
     events: Array<{
       type: string;
       content: string;
@@ -275,6 +282,7 @@ export function useStreams(projectId: string | undefined) {
           sourceType: stream.source_type,
           parentStreamId,
           branchedFromEventId: null,
+          dependencies: stream.dependencies ?? [],
           createdAt: Timestamp.fromDate(new Date(stream.created_at)),
           updatedAt: serverTimestamp(),
           ...(stream.position_x !== undefined && { positionX: stream.position_x }),
