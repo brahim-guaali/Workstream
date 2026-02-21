@@ -354,6 +354,8 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
             }
           } else {
             // It was a click, not a drag
+            setFreePan(false);
+            lastMousePos.current = null;
             onSelectStream(node.stream);
           }
         });
