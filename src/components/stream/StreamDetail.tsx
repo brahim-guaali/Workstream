@@ -108,16 +108,16 @@ export function StreamDetail({
       case 'note':
         return <MessageSquare className="w-4 h-4" />;
       case 'status_change':
-        return <span className="w-4 h-4 rounded-full bg-blue-500" />;
+        return <span className="w-4 h-4 rounded-full bg-brand-500" />;
       default:
-        return <span className="w-4 h-4 rounded-full bg-slate-400" />;
+        return <span className="w-4 h-4 rounded-full bg-stone-400" />;
     }
   };
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800">
+    <div className="h-full flex flex-col bg-white dark:bg-stone-900 border-l border-stone-200 dark:border-stone-800">
       {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex-shrink-0 p-4 border-b border-stone-200 dark:border-stone-800">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             {isEditingTitle ? (
@@ -130,7 +130,7 @@ export function StreamDetail({
                     if (e.key === 'Enter') handleSaveTitle();
                     if (e.key === 'Escape') handleCancelEditTitle();
                   }}
-                  className="flex-1 px-2 py-1 text-lg font-semibold bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-2 py-1 text-lg font-semibold bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 rounded-md text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
                   autoFocus
                 />
                 <button
@@ -141,21 +141,21 @@ export function StreamDetail({
                 </button>
                 <button
                   onClick={handleCancelEditTitle}
-                  className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+                  className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-2 group">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 truncate">
+                <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100 truncate">
                   {stream.title}
                 </h2>
                 <button
                   onClick={() => setIsEditingTitle(true)}
-                  className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <Pencil className="w-4 h-4 text-slate-400" />
+                  <Pencil className="w-4 h-4 text-stone-400" />
                 </button>
               </div>
             )}
@@ -165,7 +165,7 @@ export function StreamDetail({
                   type="datetime-local"
                   value={editedDate}
                   onChange={(e) => setEditedDate(e.target.value)}
-                  className="px-2 py-1 text-sm bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-2 py-1 text-sm bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 rounded-md text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
                 <button
                   onClick={handleSaveDate}
@@ -175,30 +175,30 @@ export function StreamDetail({
                 </button>
                 <button
                   onClick={handleCancelEditDate}
-                  className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+                  className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
             ) : (
               <div className="mt-1 flex items-center gap-2 group">
-                <p className="text-sm text-slate-500 dark:text-slate-400">
+                <p className="text-sm text-stone-500 dark:text-stone-400">
                   Created {formatDateTime(stream.created_at)}
                 </p>
                 <button
                   onClick={() => setIsEditingDate(true)}
-                  className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <Pencil className="w-3 h-3 text-slate-400" />
+                  <Pencil className="w-3 h-3 text-stone-400" />
                 </button>
               </div>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
           >
-            <X className="w-5 h-5 text-slate-500" />
+            <X className="w-5 h-5 text-stone-500" />
           </button>
         </div>
       </div>
@@ -226,10 +226,10 @@ export function StreamDetail({
         {/* Description */}
         {stream.description && (
           <div>
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
               Description
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
+            <p className="text-sm text-stone-600 dark:text-stone-400 whitespace-pre-wrap">
               {stream.description}
             </p>
           </div>
@@ -254,7 +254,7 @@ export function StreamDetail({
 
         {/* Add Note */}
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300">
             Add Note
           </h3>
           <Textarea
@@ -275,15 +275,15 @@ export function StreamDetail({
 
         {/* Event History */}
         <div>
-          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+          <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">
             History
           </h3>
           {eventsLoading ? (
             <div className="flex justify-center py-4">
-              <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : events.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">No history yet</p>
+            <p className="text-sm text-stone-500 dark:text-stone-400">No history yet</p>
           ) : (
             <div className="space-y-3">
               {events.map((event) => (
@@ -291,14 +291,14 @@ export function StreamDetail({
                   key={event.id}
                   className="flex gap-3 text-sm"
                 >
-                  <div className="flex-shrink-0 mt-0.5 text-slate-400">
+                  <div className="flex-shrink-0 mt-0.5 text-stone-400">
                     {getEventIcon(event.type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                    <p className="text-stone-700 dark:text-stone-300 whitespace-pre-wrap">
                       {event.content}
                     </p>
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-1 text-xs text-stone-400">
                       {getRelativeTime(event.created_at)}
                     </p>
                   </div>

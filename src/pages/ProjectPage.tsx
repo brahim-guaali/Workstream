@@ -8,11 +8,13 @@ import { StreamDetail } from '../components/stream/StreamDetail';
 import { AddStreamModal } from '../components/stream/AddStreamModal';
 import { useStreams } from '../hooks/useStreams';
 import { useEvents } from '../hooks/useEvents';
+import { useProject } from '../hooks/useProjects';
 import { statusHexColors, sourceTypeHexColors } from '../lib/utils';
 import type { StreamWithChildren, SourceType, StreamStatus } from '../types/database';
 
 export function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
+  const { project } = useProject(projectId);
   const { streams, streamTree, loading, createStream, updateStream, deleteStream, exportProject, importProject } = useStreams(projectId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamTreeRef = useRef<StreamTreeHandle>(null);
@@ -199,9 +201,9 @@ export function ProjectPage() {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center h-[calc(100vh-3.5rem)] gap-3">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
           {isImporting && (
-            <p className="text-sm text-slate-500 dark:text-slate-400">Importing streams...</p>
+            <p className="text-sm text-stone-500 dark:text-stone-400">Importing streams...</p>
           )}
         </div>
       </Layout>
@@ -212,81 +214,94 @@ export function ProjectPage() {
     <Layout>
       <div className="h-[calc(100vh-3.5rem)] flex flex-col">
         {/* Toolbar */}
-        <div className="flex-shrink-0 h-14 px-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-          <div className="flex items-center gap-4">
-            <Link
-              to="/"
-              className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Link>
+        <div className="flex-shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 min-w-0">
+              <Link
+                to="/"
+                className="flex-shrink-0 flex items-center gap-1 text-sm text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Link>
 
-            {/* Stream Stats */}
-            {streams.length > 0 && (
-              <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  {stats.total} stream{stats.total !== 1 ? 's' : ''}
-                </span>
-                <div className="flex items-center gap-2">
-                  {(Object.entries(stats.byStatus) as [StreamStatus, number][])
-                    .filter(([, count]) => count > 0)
-                    .map(([status, count]) => (
-                      <span
-                        key={status}
-                        className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: `${statusHexColors[status]}20`, color: statusHexColors[status] }}
-                      >
-                        <span
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: statusHexColors[status] }}
-                        />
-                        {count} {status}
-                      </span>
-                    ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  {(Object.entries(stats.byType) as [SourceType, number][])
-                    .filter(([, count]) => count > 0)
-                    .map(([type, count]) => (
-                      <span
-                        key={type}
-                        className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: `${sourceTypeHexColors[type]}20`, color: sourceTypeHexColors[type] }}
-                      >
-                        {count} {type}{count !== 1 ? 's' : ''}
-                      </span>
-                    ))}
-                </div>
+              <div className="min-w-0 pl-4 border-l border-stone-200 dark:border-stone-700">
+                <h1 className="text-xl font-bold text-stone-900 dark:text-stone-100 truncate">
+                  {project?.name || 'Project'}
+                </h1>
+                {project?.description && (
+                  <p className="text-sm text-stone-500 dark:text-stone-400 truncate">
+                    {project.description}
+                  </p>
+                )}
               </div>
-            )}
-          </div>
 
-          <div className="flex items-center gap-2">
-            {streams.length > 0 && (
-              <Button variant="secondary" size="sm" onClick={handleRecenter} title="Recenter view">
-                <Crosshair className="w-4 h-4" />
+              {/* Stream Stats */}
+              {streams.length > 0 && (
+                <div className="flex items-center gap-3 pl-4 border-l border-stone-200 dark:border-stone-700">
+                  <span className="text-sm font-medium text-stone-700 dark:text-stone-300">
+                    {stats.total} stream{stats.total !== 1 ? 's' : ''}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {(Object.entries(stats.byStatus) as [StreamStatus, number][])
+                      .filter(([, count]) => count > 0)
+                      .map(([status, count]) => (
+                        <span
+                          key={status}
+                          className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${statusHexColors[status]}20`, color: statusHexColors[status] }}
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: statusHexColors[status] }}
+                          />
+                          {count} {status}
+                        </span>
+                      ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {(Object.entries(stats.byType) as [SourceType, number][])
+                      .filter(([, count]) => count > 0)
+                      .map(([type, count]) => (
+                        <span
+                          key={type}
+                          className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${sourceTypeHexColors[type]}20`, color: sourceTypeHexColors[type] }}
+                        >
+                          {count} {type}{count !== 1 ? 's' : ''}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {streams.length > 0 && (
+                <Button variant="secondary" size="sm" onClick={handleRecenter} title="Recenter view">
+                  <Crosshair className="w-4 h-4" />
+                </Button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                className="hidden"
+              />
+              <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="w-4 h-4 mr-1" />
+                Import
               </Button>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleImport}
-              className="hidden"
-            />
-            <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
-              <Upload className="w-4 h-4 mr-1" />
-              Import
-            </Button>
-            <Button variant="secondary" size="sm" onClick={handleExport}>
-              <Download className="w-4 h-4 mr-1" />
-              Export
-            </Button>
-            <Button onClick={handleOpenAddModal}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Stream
-            </Button>
+              <Button variant="secondary" size="sm" onClick={handleExport}>
+                <Download className="w-4 h-4 mr-1" />
+                Export
+              </Button>
+              <Button onClick={handleOpenAddModal}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Stream
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -296,13 +311,13 @@ export function ProjectPage() {
           <div className="flex-1 overflow-hidden">
             {streams.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-                  <Plus className="w-8 h-8 text-slate-400" />
+                <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center mb-4">
+                  <Plus className="w-8 h-8 text-stone-400" />
                 </div>
-                <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+                <h3 className="text-lg font-medium text-stone-900 dark:text-stone-100 mb-2">
                   No streams yet
                 </h3>
-                <p className="text-slate-500 dark:text-slate-400 mb-4 max-w-sm">
+                <p className="text-stone-500 dark:text-stone-400 mb-4 max-w-sm">
                   Start by creating your first stream to track your project's evolution
                 </p>
                 <div className="flex items-center gap-3">
@@ -310,7 +325,7 @@ export function ProjectPage() {
                     <Plus className="w-4 h-4 mr-2" />
                     Create First Stream
                   </Button>
-                  <span className="text-slate-400">or</span>
+                  <span className="text-stone-400">or</span>
                   <Button variant="secondary" onClick={handleLoadExample}>
                     <Download className="w-4 h-4 mr-2" />
                     Load Example

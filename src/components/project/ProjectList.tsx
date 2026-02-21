@@ -24,7 +24,7 @@ export function ProjectList({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -32,7 +32,7 @@ export function ProjectList({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Projects</h1>
+        <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Projects</h1>
         <Button onClick={() => setIsCreateModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           New Project
@@ -40,12 +40,12 @@ export function ProjectList({
       </div>
 
       {projects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 px-4 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700">
-          <FolderOpen className="w-12 h-12 text-slate-400 mb-4" />
-          <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+        <div className="flex flex-col items-center justify-center py-16 px-4 rounded-xl border-2 border-dashed border-stone-300 dark:border-stone-700">
+          <FolderOpen className="w-12 h-12 text-stone-400 mb-4" />
+          <h3 className="text-lg font-medium text-stone-900 dark:text-stone-100 mb-2">
             No projects yet
           </h3>
-          <p className="text-slate-500 dark:text-slate-400 text-center mb-4">
+          <p className="text-stone-500 dark:text-stone-400 text-center mb-4">
             Create your first project to start tracking workstreams
           </p>
           <Button onClick={() => setIsCreateModalOpen(true)}>

@@ -19,6 +19,43 @@ type ProjectInput = {
   description: string | null;
 };
 
+export function useProject(projectId: string | undefined) {
+  const { user } = useAuth();
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user || !projectId) {
+      setProject(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const projectRef = doc(db, 'users', user.uid, 'projects', projectId);
+    const unsubscribe = onSnapshot(projectRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setProject({
+          id: snap.id,
+          name: data.name,
+          description: data.description,
+          user_id: user.uid,
+          created_at: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          updated_at: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        });
+      } else {
+        setProject(null);
+      }
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, [user, projectId]);
+
+  return { project, loading };
+}
+
 export function useProjects() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);

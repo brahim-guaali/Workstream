@@ -220,7 +220,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           target: [targetX, targetY],
         }))
         .attr('fill', 'none')
-        .attr('stroke', isLinkInAncestorChain ? '#3b82f6' : '#94a3b8')
+        .attr('stroke', isLinkInAncestorChain ? '#FF5A00' : '#a8a29e')
         .attr('stroke-width', isLinkInAncestorChain ? 3 : 2);
     });
 
@@ -360,8 +360,8 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         .attr('width', node.width)
         .attr('height', node.height)
         .attr('rx', 8)
-        .attr('fill', selectedStreamId === node.id ? '#eff6ff' : '#ffffff')
-        .attr('stroke', selectedStreamId === node.id ? '#3b82f6' : '#e2e8f0')
+        .attr('fill', selectedStreamId === node.id ? '#FFF5ED' : '#ffffff')
+        .attr('stroke', selectedStreamId === node.id ? '#FF5A00' : '#e7e5e4')
         .attr('stroke-width', selectedStreamId === node.id ? 2 : 1);
 
       // Status indicator - colored left border
@@ -456,7 +456,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         .attr('y', 20)
         .attr('font-size', '13px')
         .attr('font-weight', '600')
-        .attr('fill', '#1e293b')
+        .attr('fill', '#292524')
         .text(node.stream.title.length > 20
           ? node.stream.title.substring(0, 20) + '...'
           : node.stream.title
@@ -469,7 +469,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           .attr('x', 16)
           .attr('y', 44)
           .attr('font-size', '11px')
-          .attr('fill', '#64748b')
+          .attr('fill', '#78716c')
           .text(
             node.stream.description.length > 28
               ? node.stream.description.substring(0, 28) + '...'
@@ -484,7 +484,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           .attr('x', 16)
           .attr('y', node.height - 12)
           .attr('font-size', '10px')
-          .attr('fill', '#94a3b8')
+          .attr('fill', '#a8a29e')
           .text(`${node.stream.children.length} branch${node.stream.children.length > 1 ? 'es' : ''}`);
       }
 
@@ -500,7 +500,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           .attr('cx', handleX)
           .attr('cy', handleY)
           .attr('r', handleRadius)
-          .attr('fill', '#3b82f6')
+          .attr('fill', '#FF5A00')
           .attr('stroke', '#ffffff')
           .attr('stroke-width', 2)
           .attr('cursor', 'crosshair')
@@ -509,10 +509,10 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         // Hover effect
         handle
           .on('mouseenter', function() {
-            d3.select(this).attr('r', handleRadius + 2).attr('fill', '#2563eb');
+            d3.select(this).attr('r', handleRadius + 2).attr('fill', '#E04E00');
           })
           .on('mouseleave', function() {
-            d3.select(this).attr('r', handleRadius).attr('fill', '#3b82f6');
+            d3.select(this).attr('r', handleRadius).attr('fill', '#FF5A00');
           });
 
         // Drag behavior for creating connections
@@ -542,7 +542,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
                 target: [connectionStartX, connectionStartY],
               }))
               .attr('fill', 'none')
-              .attr('stroke', '#3b82f6')
+              .attr('stroke', '#FF5A00')
               .attr('stroke-width', 2)
               .attr('stroke-dasharray', '5,5');
 
@@ -557,8 +557,8 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
               .attr('width', placeholderWidth)
               .attr('height', placeholderHeight)
               .attr('rx', 8)
-              .attr('fill', '#eff6ff')
-              .attr('stroke', '#3b82f6')
+              .attr('fill', '#FFF5ED')
+              .attr('stroke', '#FF5A00')
               .attr('stroke-width', 2)
               .attr('stroke-dasharray', '5,5')
               .attr('opacity', 0.7);
@@ -570,7 +570,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
               .attr('text-anchor', 'middle')
               .attr('dominant-baseline', 'middle')
               .attr('font-size', '12px')
-              .attr('fill', '#3b82f6')
+              .attr('fill', '#FF5A00')
               .text('New Stream...');
           })
           .on('drag', (event) => {
@@ -643,7 +643,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
             target: [targetX, targetY],
           }))
           .attr('fill', 'none')
-          .attr('stroke', '#3b82f6')
+          .attr('stroke', '#FF5A00')
           .attr('stroke-width', 2)
           .attr('stroke-dasharray', '5,5');
 
@@ -659,8 +659,8 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           .attr('width', placeholderWidth)
           .attr('height', placeholderHeight)
           .attr('rx', 8)
-          .attr('fill', '#eff6ff')
-          .attr('stroke', '#3b82f6')
+          .attr('fill', '#FFF5ED')
+          .attr('stroke', '#FF5A00')
           .attr('stroke-width', 2)
           .attr('stroke-dasharray', '5,5')
           .attr('opacity', 0.8);
@@ -673,7 +673,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           .attr('text-anchor', 'middle')
           .attr('dominant-baseline', 'middle')
           .attr('font-size', '12px')
-          .attr('fill', '#3b82f6')
+          .attr('fill', '#FF5A00')
           .text('New Stream...');
       }
     }
@@ -681,7 +681,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
   }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice, pendingSlice, focusedNodeIds]);
 
   return (
-    <div ref={containerRef} className="w-full h-full overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div ref={containerRef} className="w-full h-full overflow-hidden bg-stone-50 dark:bg-stone-950">
       <svg
         ref={svgRef}
         width="100%"
