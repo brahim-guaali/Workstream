@@ -1,12 +1,12 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Upload, Crosshair, Pencil, X, Check, BarChart3, ChevronDown, FileText, FileDown, FileJson } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Pencil, X, Check, BarChart3, ChevronDown, FileText, FileDown, FileJson } from 'lucide-react';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
-import { StreamTree, type StreamTreeHandle } from '../components/visualization/StreamTree';
+import { StreamTree } from '../components/visualization/StreamTree';
 import { StreamDetail } from '../components/stream/StreamDetail';
 import { AddStreamModal } from '../components/stream/AddStreamModal';
 import { useStreams } from '../hooks/useStreams';
@@ -25,7 +25,6 @@ export function ProjectPage() {
   const [editDescription, setEditDescription] = useState('');
   const { streams, streamTree, loading, createStream, updateStream, deleteStream, exportProject, importProject } = useStreams(projectId);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const streamTreeRef = useRef<StreamTreeHandle>(null);
   const [selectedStream, setSelectedStream] = useState<StreamWithChildren | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [branchFromStreamId, setBranchFromStreamId] = useState<string | null>(null);
@@ -110,10 +109,6 @@ export function ProjectPage() {
 
     return { total: leafNodes.length, byStatus, byType };
   }, [streams]);
-
-  const handleRecenter = useCallback(() => {
-    streamTreeRef.current?.resetView();
-  }, []);
 
   const handleSelectStream = useCallback((stream: StreamWithChildren) => {
     setSelectedStream(stream);
@@ -402,11 +397,6 @@ export function ProjectPage() {
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              {streams.length > 0 && (
-                <Button variant="secondary" size="sm" onClick={handleRecenter} title="Recenter view">
-                  <Crosshair className="w-4 h-4" />
-                </Button>
-              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -662,7 +652,6 @@ export function ProjectPage() {
               </div>
             ) : (
               <StreamTree
-                ref={streamTreeRef}
                 streamTree={displayTree}
                 selectedStreamId={selectedStream?.id || null}
                 onSelectStream={handleSelectStream}

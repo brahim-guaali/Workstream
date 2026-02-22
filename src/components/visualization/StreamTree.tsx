@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import * as d3 from 'd3';
-import { ZoomIn, ZoomOut, Move, Hand, X } from 'lucide-react';
+import { ZoomIn, ZoomOut, Move, Hand, X, Crosshair } from 'lucide-react';
 import type { StreamWithChildren } from '../../types/database';
 import { useVisualization } from '../../hooks/useVisualization';
 import { statusHexColors, sourceTypeHexColors } from '../../lib/utils';
@@ -1063,6 +1063,17 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           title={freePan ? 'Switch to drag mode' : 'Switch to free pan mode'}
         >
           {freePan ? <Move className="w-4 h-4" /> : <Hand className="w-4 h-4" />}
+        </button>
+        <div className="w-px h-5 bg-stone-200 dark:bg-stone-700 mx-0.5" />
+        <button
+          onClick={() => {
+            setPan({ x: 0, y: 0 });
+            setZoom(1);
+          }}
+          className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors"
+          title="Recenter view"
+        >
+          <Crosshair className="w-4 h-4" />
         </button>
       </div>
     </div>
