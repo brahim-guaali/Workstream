@@ -10,6 +10,7 @@ A visual project tracker that shows how work branches over time. Track parallel 
 - **Project Metrics**: Track key metrics with change percentages and optional targets
 - **Stream Dependencies**: Define dependencies between streams
 - **Source Types**: Categorize streams as task, investigation, meeting, blocker, or discovery
+- **AI Insights**: AI-powered project analysis with TL;DR, progress overview, blockers, metrics trends, and recommendations (Gemini via Firebase AI Logic)
 - **Export Formats**: Export projects as JSON (data backup), Markdown (readable document), or PDF (print)
 - **Import / Export**: Full JSON import/export with metrics, streams, events, and positions preserved
 - **Google Auth**: Sign in with Google via Firebase Authentication
@@ -23,6 +24,7 @@ https://github.com/user-attachments/assets/37d18491-6b29-4698-9c46-078cf517bcaa
 - **Frontend**: React 19, TypeScript, Vite
 - **Styling**: TailwindCSS 4
 - **Visualization**: D3.js
+- **AI**: Firebase AI Logic (Gemini 2.5 Flash)
 - **Backend**: Firebase (Firestore + Auth)
 - **Hosting**: Firebase Hosting
 
@@ -73,7 +75,8 @@ npm run dev
 1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
 2. Enable **Firestore Database**
 3. Enable **Authentication** with Google sign-in provider
-4. Copy your Firebase config values into `.env`
+4. Enable the **Gemini Developer API** (under Build > AI Logic) for AI Insights
+5. Copy your Firebase config values into `.env`
 
 ## Project Structure
 
@@ -87,7 +90,7 @@ src/
 │   ├── visualization/     # StreamTree (D3 canvas)
 │   └── ui/                # Button, Modal, Input, Textarea
 ├── contexts/              # AuthContext
-├── hooks/                 # useProjects, useStreams, useEvents
+├── hooks/                 # useProjects, useStreams, useEvents, useProjectInsights
 ├── lib/                   # firebase.ts, utils.ts, exportDocument.ts
 ├── types/                 # database.ts
 └── pages/                 # HomePage, ProjectPage
