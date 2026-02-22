@@ -36,6 +36,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
   const [freePan, setFreePan] = useState(false);
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
   const hasInitialFit = useRef(false);
+  const lastAutoPannedId = useRef<string | null>(null);
 
   // Escape key exits focus mode
   useEffect(() => {
@@ -233,9 +234,13 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
     requestAnimationFrame(() => fitAll());
   }, [layout.nodes, fitAll]);
 
-  // Auto-pan to keep the selected node visible when the sidebar opens
+  // Auto-pan to keep the selected node visible when a NEW stream is selected.
+  // Once auto-panned, manual user pan/zoom is not overridden.
   useEffect(() => {
     if (!selectedStreamId || !containerRef.current) return;
+    // Only auto-pan when the selection actually changes
+    if (lastAutoPannedId.current === selectedStreamId) return;
+    lastAutoPannedId.current = selectedStreamId;
 
     const node = layout.nodes.find((n) => n.id === selectedStreamId);
     if (!node) return;
