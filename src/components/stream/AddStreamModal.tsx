@@ -5,6 +5,7 @@ import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import type { SourceType, StreamWithChildren } from '../../types/database';
+import { sourceTypeOptions } from '../../lib/streamConfig';
 
 interface AddStreamModalProps {
   isOpen: boolean;
@@ -18,14 +19,6 @@ interface AddStreamModalProps {
   streams: StreamWithChildren[];
   defaultParentId?: string | null;
 }
-
-const sourceTypeOptions = [
-  { value: 'task', label: 'Task' },
-  { value: 'investigation', label: 'Investigation' },
-  { value: 'meeting', label: 'Meeting' },
-  { value: 'blocker', label: 'Blocker' },
-  { value: 'discovery', label: 'Discovery' },
-];
 
 export function AddStreamModal({
   isOpen,

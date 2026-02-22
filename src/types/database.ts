@@ -1,5 +1,5 @@
-export type StreamStatus = 'backlog' | 'active' | 'blocked' | 'done';
-export type SourceType = 'investigation' | 'meeting' | 'blocker' | 'discovery' | 'task';
+import type { StreamStatus, SourceType } from '../lib/streamConfig';
+export type { StreamStatus, SourceType };
 export type EventType = 'note' | 'status_change' | 'artifact_link' | 'created';
 export type ArtifactType = 'pr' | 'ticket' | 'doc' | 'link';
 

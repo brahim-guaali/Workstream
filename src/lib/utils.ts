@@ -79,50 +79,14 @@ export function getRelativeTime(dateString: string): string {
   return formatDate(dateString);
 }
 
-export const statusColors = {
-  backlog: 'bg-stone-400',
-  active: 'bg-green-500',
-  blocked: 'bg-amber-500',
-  done: 'bg-slate-400',
-} as const;
-
-export const statusHexColors = {
-  backlog: '#a8a29e',  // Stone/gray for backlog
-  active: '#3b82f6',   // Blue for in-progress
-  blocked: '#f59e0b',
-  done: '#22c55e',     // Green for completed
-} as const;
-
-export const statusLabels = {
-  backlog: 'Backlog',
-  active: 'Active',
-  blocked: 'Blocked',
-  done: 'Done',
-} as const;
-
-export const sourceTypeColors = {
-  investigation: 'bg-blue-500',
-  meeting: 'bg-purple-500',
-  blocker: 'bg-red-500',
-  discovery: 'bg-cyan-500',
-  task: 'bg-slate-500',
-} as const;
-
-export const sourceTypeHexColors = {
-  investigation: '#3b82f6',
-  meeting: '#a855f7',
-  blocker: '#ef4444',
-  discovery: '#06b6d4',
-  task: '#64748b',
-} as const;
-
-export const sourceTypeLabels = {
-  investigation: 'Investigation',
-  meeting: 'Meeting',
-  blocker: 'Blocker',
-  discovery: 'Discovery',
-  task: 'Task',
-} as const;
+export {
+  statusColors,
+  statusHexColors,
+  statusLabels,
+  sourceTypeColors,
+  sourceTypeHexColors,
+  sourceTypeLabels,
+} from './streamConfig';
 
 // --- Focus mode helpers ---
 

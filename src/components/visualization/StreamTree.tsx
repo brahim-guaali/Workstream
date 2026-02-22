@@ -3,31 +3,8 @@ import * as d3 from 'd3';
 import { ZoomIn, ZoomOut, Move, Hand, X, Crosshair } from 'lucide-react';
 import type { StreamWithChildren } from '../../types/database';
 import { useVisualization } from '../../hooks/useVisualization';
-import { statusHexColors, sourceTypeHexColors } from '../../lib/utils';
+import { statusHexColors, sourceTypeHexColors, statusIcons, statusLabels, sourceTypeLabels } from '../../lib/streamConfig';
 import { ContextMenu } from './ContextMenu';
-
-// SVG path data for status icons (20x20 viewbox, centered)
-const statusIcons = {
-  backlog: 'M6 10h8', // Horizontal line (pause/queue)
-  active: 'M10 6v8M6 10h8', // Plus/loading style
-  blocked: 'M6 6l8 8M14 6l-8 8', // X mark
-  done: 'M5 10l4 4 6-6', // Checkmark
-} as const;
-
-const statusLabels = {
-  backlog: 'Backlog',
-  active: 'Active',
-  blocked: 'Blocked',
-  done: 'Done',
-} as const;
-
-const typeLabels = {
-  task: 'Task',
-  investigation: 'Investigation',
-  meeting: 'Meeting',
-  blocker: 'Blocker',
-  discovery: 'Discovery',
-} as const;
 
 interface StreamTreeProps {
   streamTree: StreamWithChildren[];
@@ -83,13 +60,6 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
     return null;
   }, []);
   const focusedStreamTitle = focusedStreamId ? findStreamTitle(streamTree, focusedStreamId) : null;
-
-  useImperativeHandle(ref, () => ({
-    resetView: () => {
-      setPan({ x: 0, y: 0 });
-      setZoom(1);
-    },
-  }), [setPan, setZoom]);
 
   // Initialize offsets from saved positions
   const getInitialOffsets = useCallback(() => {
@@ -147,6 +117,153 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
     [setPan]
   );
 
+  // Keep refs for auto-pan so the effect only fires on selectedStreamId changes
+  const panRef = useRef(pan);
+  panRef.current = pan;
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const nodeOffsetsRef = useRef(nodeOffsets);
+  nodeOffsetsRef.current = nodeOffsets;
+
+  // Animated view transition — easeOutCubic over a given duration
+  const animRef = useRef<number>(0);
+  const animateViewTo = useCallback((targetX: number, targetY: number, targetZoom?: number, duration = 300) => {
+    cancelAnimationFrame(animRef.current);
+    const startX = panRef.current.x;
+    const startY = panRef.current.y;
+    const startZoom = zoomRef.current;
+    const endZoom = targetZoom ?? startZoom;
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      setPan({
+        x: startX + (targetX - startX) * ease,
+        y: startY + (targetY - startY) * ease,
+      });
+      if (endZoom !== startZoom) {
+        setZoom(startZoom + (endZoom - startZoom) * ease);
+      }
+      if (t < 1) {
+        animRef.current = requestAnimationFrame(step);
+      }
+    };
+    animRef.current = requestAnimationFrame(step);
+  }, [setPan, setZoom]);
+
+  // Animated zoom-only helper (keeps current pan)
+  const animateZoomTo = useCallback((target: number, duration = 200) => {
+    animateViewTo(panRef.current.x, panRef.current.y, target, duration);
+  }, [animateViewTo]);
+
+  // Wheel zoom: accumulate a target and animate to it
+  const wheelZoomTarget = useRef(zoom);
+  wheelZoomTarget.current = zoom; // stay in sync when not wheeling
+  const wheelAnimRef = useRef<number>(0);
+  const handleWheelZoom = useCallback((deltaY: number) => {
+    const delta = -deltaY * 0.001;
+    wheelZoomTarget.current = Math.min(3, Math.max(0.2, wheelZoomTarget.current + delta));
+    cancelAnimationFrame(wheelAnimRef.current);
+    const startZoom = zoomRef.current;
+    const endZoom = wheelZoomTarget.current;
+    const duration = 150;
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      setZoom(startZoom + (endZoom - startZoom) * ease);
+      if (t < 1) {
+        wheelAnimRef.current = requestAnimationFrame(step);
+      }
+    };
+    wheelAnimRef.current = requestAnimationFrame(step);
+  }, [setZoom]);
+
+  // Fit all nodes in the viewport
+  const fitAll = useCallback(() => {
+    if (!containerRef.current || layout.nodes.length === 0) return;
+
+    const offsets = nodeOffsetsRef.current;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    for (const node of layout.nodes) {
+      const off = offsets[node.id] || { x: 0, y: 0 };
+      const nx = node.x + off.x;
+      const ny = node.y + off.y;
+      minX = Math.min(minX, nx);
+      minY = Math.min(minY, ny);
+      maxX = Math.max(maxX, nx + node.width);
+      maxY = Math.max(maxY, ny + node.height);
+    }
+
+    const contentW = maxX - minX;
+    const contentH = maxY - minY;
+    const rect = containerRef.current.getBoundingClientRect();
+    const padding = 60;
+    const availW = rect.width - padding * 2;
+    const availH = rect.height - padding * 2;
+
+    const newZoom = Math.min(Math.max(availW / contentW, 0.2), Math.min(availH / contentH, 3));
+    const newPanX = (rect.width - contentW * newZoom) / 2 - minX * newZoom;
+    const newPanY = (rect.height - contentH * newZoom) / 2 - minY * newZoom;
+
+    animateViewTo(newPanX, newPanY, newZoom);
+  }, [layout.nodes, animateViewTo]);
+
+  useImperativeHandle(ref, () => ({
+    resetView: () => fitAll(),
+  }), [fitAll]);
+
+  // Auto-pan to keep the selected node visible when the sidebar opens
+  useEffect(() => {
+    if (!selectedStreamId || !containerRef.current) return;
+
+    const node = layout.nodes.find((n) => n.id === selectedStreamId);
+    if (!node) return;
+
+    // Wait one frame so the sidebar has rendered and the container has its new size
+    const rafId = requestAnimationFrame(() => {
+      if (!containerRef.current) return;
+
+      const curPan = panRef.current;
+      const curZoom = zoomRef.current;
+      const offset = nodeOffsetsRef.current[selectedStreamId] || { x: 0, y: 0 };
+
+      const nodeX = node.x + offset.x;
+      const nodeY = node.y + offset.y;
+
+      // Node bounds in screen (pixel) coordinates
+      const screenLeft = curPan.x + nodeX * curZoom;
+      const screenRight = curPan.x + (nodeX + node.width) * curZoom;
+      const screenTop = curPan.y + nodeY * curZoom;
+      const screenBottom = curPan.y + (nodeY + node.height) * curZoom;
+
+      const rect = containerRef.current!.getBoundingClientRect();
+      const viewW = rect.width;
+      const viewH = rect.height;
+      const margin = 40;
+
+      const isVisible =
+        screenLeft >= margin &&
+        screenRight <= viewW - margin &&
+        screenTop >= margin &&
+        screenBottom <= viewH - margin;
+
+      if (!isVisible) {
+        animateViewTo(
+          viewW / 2 - (nodeX + node.width / 2) * curZoom,
+          viewH / 2 - (nodeY + node.height / 2) * curZoom,
+        );
+      }
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      cancelAnimationFrame(animRef.current);
+    };
+  }, [selectedStreamId, layout.nodes, animateViewTo]);
 
   // Compute ancestor IDs for the selected stream
   const getAncestorIds = useCallback((streamId: string | null): Set<string> => {
@@ -580,7 +697,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         .text(statusLabels[node.stream.status]);
 
       // Type badge (bottom right)
-      const typeLabel = typeLabels[node.stream.source_type];
+      const typeLabel = sourceTypeLabels[node.stream.source_type];
       const typeBadgeWidth = typeLabel.length * 7 + 16;
       const typeBadgeGroup = nodeGroup
         .append('g')
@@ -756,7 +873,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       const tooltipContent = [
         node.stream.title,
         node.stream.description || '',
-        `Status: ${statusLabels[node.stream.status]} | Type: ${typeLabels[node.stream.source_type]}`,
+        `Status: ${statusLabels[node.stream.status]} | Type: ${sourceTypeLabels[node.stream.source_type]}`,
         deps.length > 0 ? `Dependencies: ${deps.join(', ')}` : '',
       ].filter(Boolean).join('\n');
 
@@ -894,12 +1011,11 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       .on('drag', handleCanvasDrag);
     svg.call(canvasDrag);
 
-    // Scroll-wheel zoom
+    // Scroll-wheel zoom (smooth)
     const svgEl = svgRef.current;
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const delta = -e.deltaY * 0.001;
-      setZoom((prev) => Math.min(3, Math.max(0.2, prev + delta)));
+      handleWheelZoom(e.deltaY);
     };
     svgEl.addEventListener('wheel', handleWheel, { passive: false });
 
@@ -992,7 +1108,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       svgEl.removeEventListener('mousemove', handleMouseMove);
       svgEl.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice, pendingSlice, focusedNodeIds, freePan, setZoom, setPan, onExitFocus, focusedStreamId]);
+  }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice, pendingSlice, focusedNodeIds, freePan, setZoom, setPan, onExitFocus, focusedStreamId, handleWheelZoom]);
 
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden bg-stone-50 dark:bg-stone-950">
@@ -1033,7 +1149,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       {/* Zoom & pan controls */}
       <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg p-1">
         <button
-          onClick={() => setZoom((z) => Math.min(3, z + 0.15))}
+          onClick={() => animateZoomTo(Math.min(3, zoomRef.current + 0.15))}
           className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors"
           title="Zoom in"
         >
@@ -1043,7 +1159,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           {Math.round(zoom * 100)}%
         </span>
         <button
-          onClick={() => setZoom((z) => Math.max(0.2, z - 0.15))}
+          onClick={() => animateZoomTo(Math.max(0.2, zoomRef.current - 0.15))}
           className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors"
           title="Zoom out"
         >
@@ -1066,10 +1182,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         </button>
         <div className="w-px h-5 bg-stone-200 dark:bg-stone-700 mx-0.5" />
         <button
-          onClick={() => {
-            setPan({ x: 0, y: 0 });
-            setZoom(1);
-          }}
+          onClick={fitAll}
           className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors"
           title="Recenter view"
         >

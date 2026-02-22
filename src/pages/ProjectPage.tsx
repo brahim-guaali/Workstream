@@ -12,10 +12,12 @@ import { AddStreamModal } from '../components/stream/AddStreamModal';
 import { useStreams } from '../hooks/useStreams';
 import { useEvents } from '../hooks/useEvents';
 import { useProject } from '../hooks/useProjects';
-import { statusHexColors, sourceTypeHexColors, buildFocusedTree } from '../lib/utils';
+import { buildFocusedTree } from '../lib/utils';
+import { statusHexColors, sourceTypeHexColors, STATUS_CONFIG, SOURCE_TYPE_CONFIG } from '../lib/streamConfig';
+import type { StreamStatus, SourceType } from '../lib/streamConfig';
 import { generateMarkdown, generatePrintHTML } from '../lib/exportDocument';
 import type { ExportData } from '../lib/exportDocument';
-import type { StreamWithChildren, SourceType, StreamStatus, ProjectMetric } from '../types/database';
+import type { StreamWithChildren, ProjectMetric } from '../types/database';
 
 export function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -91,8 +93,12 @@ export function ProjectPage() {
 
   // Compute stream statistics (count leaf nodes - streams with no children)
   const stats = useMemo(() => {
-    const byStatus: Record<StreamStatus, number> = { backlog: 0, active: 0, blocked: 0, done: 0 };
-    const byType: Record<SourceType, number> = { task: 0, investigation: 0, meeting: 0, blocker: 0, discovery: 0 };
+    const byStatus = Object.fromEntries(
+      Object.keys(STATUS_CONFIG).map((k) => [k, 0])
+    ) as Record<StreamStatus, number>;
+    const byType = Object.fromEntries(
+      Object.keys(SOURCE_TYPE_CONFIG).map((k) => [k, 0])
+    ) as Record<SourceType, number>;
 
     // Find IDs of streams that are parents (have children)
     const parentIds = new Set(

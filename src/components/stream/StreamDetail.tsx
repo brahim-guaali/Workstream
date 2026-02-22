@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { formatDateTime, getRelativeTime } from '../../lib/utils';
+import { statusOptions, sourceTypeOptions } from '../../lib/streamConfig';
 
 const URL_REGEX = /(https?:\/\/[^\s<]+)/g;
 
@@ -39,21 +40,6 @@ interface StreamDetailProps {
   onDeleteEvent: (id: string) => Promise<void>;
   onBranch: () => void;
 }
-
-const statusOptions = [
-  { value: 'backlog', label: 'Backlog' },
-  { value: 'active', label: 'Active' },
-  { value: 'blocked', label: 'Blocked' },
-  { value: 'done', label: 'Done' },
-];
-
-const sourceTypeOptions = [
-  { value: 'task', label: 'Task' },
-  { value: 'investigation', label: 'Investigation' },
-  { value: 'meeting', label: 'Meeting' },
-  { value: 'blocker', label: 'Blocker' },
-  { value: 'discovery', label: 'Discovery' },
-];
 
 export function StreamDetail({
   stream,
