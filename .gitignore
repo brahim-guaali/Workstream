@@ -17,9 +17,6 @@ dist
 dist-ssr
 *.local
 
-# Branding
-public/talabat-logo.svg
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
