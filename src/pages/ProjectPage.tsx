@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Upload, Pencil, X, Check, BarChart3, ChevronDown, FileText, FileDown, FileJson, Share2, Eye, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Pencil, X, Check, BarChart3, ChevronDown, FileText, FileDown, FileJson, Share2, Eye, Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -18,6 +18,9 @@ import confetti from 'canvas-confetti';
 import { statusHexColors, sourceTypeHexColors, STATUS_CONFIG, SOURCE_TYPE_CONFIG } from '../lib/streamConfig';
 import type { StreamStatus, SourceType } from '../lib/streamConfig';
 import { generateMarkdown, generatePrintHTML } from '../lib/exportDocument';
+import { useProjectInsights } from '../hooks/useProjectInsights';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { ExportData } from '../lib/exportDocument';
 import type { StreamWithChildren, ProjectMetric } from '../types/database';
 
@@ -56,6 +59,8 @@ export function ProjectPage() {
   const exportDropdownRef = useRef<HTMLDivElement>(null);
   const [focusedStreamId, setFocusedStreamId] = useState<string | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isInsightsOpen, setIsInsightsOpen] = useState(false);
+  const { insights, loading: insightsLoading, error: insightsError, generateInsights, abort: abortInsights } = useProjectInsights();
 
   const { events, loading: eventsLoading, createEvent, deleteEvent } = useEvents(projectId, selectedStream?.id, ownerId);
 
@@ -497,6 +502,20 @@ export function ProjectPage() {
                   </div>
                 )}
               </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setIsInsightsOpen(true);
+                  if (project) {
+                    generateInsights(project, streams, exportProject);
+                  }
+                }}
+                disabled={!project || streams.length === 0}
+              >
+                <Sparkles className="w-4 h-4 mr-1" />
+                Insights
+              </Button>
               {isOwner && (
                 <Button variant="secondary" size="sm" onClick={() => setIsShareModalOpen(true)}>
                   <Share2 className="w-4 h-4 mr-1" />
@@ -868,6 +887,58 @@ export function ProjectPage() {
             </Button>
             <Button onClick={handlePromptSave}>
               Save Metrics
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Insights Modal */}
+      <Modal
+        isOpen={isInsightsOpen}
+        onClose={() => {
+          setIsInsightsOpen(false);
+          abortInsights();
+        }}
+        title="Project Insights"
+        size="lg"
+      >
+        <div className="space-y-4">
+          {insightsLoading && !insights && (
+            <div className="flex flex-col items-center gap-3 py-12">
+              <div className="relative">
+                <Sparkles className="w-8 h-8 text-brand-500 animate-pulse" />
+              </div>
+              <span className="text-sm text-stone-500 dark:text-stone-400">Analyzing project data...</span>
+            </div>
+          )}
+          {insightsError && (
+            <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+              {insightsError}
+            </div>
+          )}
+          {insights && (
+            <div className="relative">
+              <div className="insights-markdown text-sm text-stone-700 dark:text-stone-300 [&>h2]:text-base [&>h2]:font-semibold [&>h2]:text-stone-900 [&>h2]:dark:text-stone-100 [&>h2]:mt-5 [&>h2]:mb-2 [&>h2]:flex [&>h2]:items-center [&>h2]:gap-2 [&>h2:first-child]:mt-0 [&>ul]:space-y-1.5 [&>ul]:ml-4 [&>ul]:list-disc [&>ul]:marker:text-brand-400 [&>p]:leading-relaxed [&>p]:mb-3 [&_strong]:text-stone-900 [&_strong]:dark:text-stone-100 [&_li]:leading-relaxed">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{insights}</ReactMarkdown>
+              </div>
+              {insightsLoading && (
+                <span className="inline-block w-1.5 h-4 bg-brand-500 animate-pulse ml-0.5 align-text-bottom" />
+              )}
+            </div>
+          )}
+          <div className="flex justify-end border-t border-stone-200 dark:border-stone-700 pt-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                if (project) {
+                  generateInsights(project, streams, exportProject);
+                }
+              }}
+              disabled={insightsLoading}
+            >
+              <RefreshCw className={`w-4 h-4 mr-1 ${insightsLoading ? 'animate-spin' : ''}`} />
+              Regenerate
             </Button>
           </div>
         </div>
