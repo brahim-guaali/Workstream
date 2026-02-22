@@ -1,4 +1,4 @@
-import type { Stream, StreamWithChildren } from '../types/database';
+import type { ProjectMetric, Stream, StreamWithChildren } from '../types/database';
 
 export function cn(...classes: (string | boolean | undefined | null)[]): string {
   return classes.filter(Boolean).join(' ');
@@ -77,6 +77,14 @@ export function getRelativeTime(dateString: string): string {
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
   if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
   return formatDate(dateString);
+}
+
+export function metricProgress(m: ProjectMetric): { pct: number; isPositive: boolean } | null {
+  if (m.initialValue === 0 || m.value === m.initialValue) return null;
+  const pct = Math.round(((m.value - m.initialValue) / Math.abs(m.initialValue)) * 100);
+  // If target exists and is below initial, the user wants a decrease — flip "positive" logic
+  const isPositive = m.target != null && m.target < m.initialValue ? pct < 0 : pct > 0;
+  return { pct, isPositive };
 }
 
 export {

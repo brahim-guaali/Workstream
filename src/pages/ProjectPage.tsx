@@ -12,7 +12,7 @@ import { AddStreamModal } from '../components/stream/AddStreamModal';
 import { useStreams } from '../hooks/useStreams';
 import { useEvents } from '../hooks/useEvents';
 import { useProject } from '../hooks/useProjects';
-import { buildFocusedTree } from '../lib/utils';
+import { buildFocusedTree, metricProgress } from '../lib/utils';
 import confetti from 'canvas-confetti';
 import { statusHexColors, sourceTypeHexColors, STATUS_CONFIG, SOURCE_TYPE_CONFIG } from '../lib/streamConfig';
 import type { StreamStatus, SourceType } from '../lib/streamConfig';
@@ -554,17 +554,18 @@ export function ProjectPage() {
                   }}
                 >
                   {m.name}: {m.value}{m.target != null ? ` / ${m.target}` : ''}
-                  {m.initialValue != null && m.initialValue !== 0 && m.value !== m.initialValue && (() => {
-                    const pct = Math.round(((m.value - m.initialValue) / Math.abs(m.initialValue)) * 100);
+                  {(() => {
+                    const progress = metricProgress(m);
+                    if (!progress) return null;
                     return (
                       <span
                         className={`ml-0.5 text-[10px] font-semibold ${
-                          pct > 0
+                          progress.isPositive
                             ? 'text-emerald-600 dark:text-emerald-400'
                             : 'text-red-500 dark:text-red-400'
                         }`}
                       >
-                        {pct > 0 ? '+' : ''}{pct}%
+                        {progress.pct > 0 ? '+' : ''}{progress.pct}%
                       </span>
                     );
                   })()}

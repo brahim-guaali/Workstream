@@ -1,6 +1,6 @@
 import { Trash2, MoreVertical, GitBranch, Calendar } from 'lucide-react';
 import type { Project } from '../../types/database';
-import { formatDate, getRelativeTime } from '../../lib/utils';
+import { formatDate, getRelativeTime, metricProgress } from '../../lib/utils';
 import { useState, useEffect } from 'react';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -164,17 +164,18 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
               className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
             >
               {m.name}: {m.value}{m.target != null ? `/${m.target}` : ''}
-              {m.initialValue != null && m.initialValue !== 0 && m.value !== m.initialValue && (() => {
-                const pct = Math.round(((m.value - m.initialValue) / Math.abs(m.initialValue)) * 100);
+              {(() => {
+                const progress = metricProgress(m);
+                if (!progress) return null;
                 return (
                   <span
                     className={`text-[10px] font-semibold ${
-                      pct > 0
+                      progress.isPositive
                         ? 'text-emerald-600 dark:text-emerald-400'
                         : 'text-red-500 dark:text-red-400'
                     }`}
                   >
-                    {pct > 0 ? '+' : ''}{pct}%
+                    {progress.pct > 0 ? '+' : ''}{progress.pct}%
                   </span>
                 );
               })()}

@@ -1,5 +1,5 @@
-import type { Project } from '../types/database';
-import { statusLabels, sourceTypeLabels } from './utils';
+import type { Project, ProjectMetric } from '../types/database';
+import { statusLabels, sourceTypeLabels, metricProgress } from './utils';
 
 type ExportedStream = {
   id: string;
@@ -44,10 +44,10 @@ function formatDate(dateString: string): string {
   });
 }
 
-function metricChange(value: number, initialValue: number): string {
-  if (initialValue === 0 || value === initialValue) return '';
-  const pct = Math.round(((value - initialValue) / Math.abs(initialValue)) * 100);
-  return pct > 0 ? `+${pct}%` : `${pct}%`;
+function metricChange(m: ProjectMetric): string {
+  const progress = metricProgress(m);
+  if (!progress) return '';
+  return progress.pct > 0 ? `+${progress.pct}%` : `${progress.pct}%`;
 }
 
 // ---------------------------------------------------------------------------
@@ -71,7 +71,7 @@ export function generateMarkdown(project: Project, exportData: ExportData): stri
     lines.push('|------|-------|--------|--------|');
     for (const m of project.metrics) {
       const target = m.target != null ? String(m.target) : '—';
-      const change = metricChange(m.value, m.initialValue) || '—';
+      const change = metricChange(m) || '—';
       lines.push(`| ${m.name} | ${m.value} | ${target} | ${change} |`);
     }
     lines.push('');
@@ -150,12 +150,11 @@ export function generatePrintHTML(project: Project, exportData: ExportData): str
         ${project.metrics
           .map((m) => {
             const target = m.target != null ? String(m.target) : '—';
-            const change = metricChange(m.value, m.initialValue);
-            const cls = change.startsWith('+')
-              ? 'positive'
-              : change.startsWith('-')
-                ? 'negative'
-                : '';
+            const progress = metricProgress(m);
+            const change = metricChange(m);
+            const cls = progress
+              ? progress.isPositive ? 'positive' : 'negative'
+              : '';
             return `<tr><td>${escapeHtml(m.name)}</td><td>${m.value}</td><td>${target}</td><td class="${cls}">${change || '—'}</td></tr>`;
           })
           .join('')}
