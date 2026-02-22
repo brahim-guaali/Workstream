@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import * as d3 from 'd3';
-import { ZoomIn, ZoomOut, Move, Hand, X, Crosshair } from 'lucide-react';
+import { ZoomIn, ZoomOut, Move, Hand, X, Crosshair, Lock, Unlock } from 'lucide-react';
 import type { StreamWithChildren } from '../../types/database';
 import { useVisualization } from '../../hooks/useVisualization';
 import { statusHexColors, sourceTypeHexColors, statusIcons, statusLabels, sourceTypeLabels } from '../../lib/streamConfig';
@@ -34,9 +34,14 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
   const containerRef = useRef<HTMLDivElement>(null);
   const { layout, zoom, pan, setPan, setZoom } = useVisualization(streamTree);
   const [freePan, setFreePan] = useState(false);
+  const [dragLocked, setDragLocked] = useState(() => localStorage.getItem('dragLocked') === 'true');
+  const dragLockedRef = useRef(false);
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
   const hasInitialFit = useRef(false);
   const lastAutoPannedId = useRef<string | null>(null);
+
+  // Keep ref in sync with state so D3 drag handlers can read it
+  dragLockedRef.current = dragLocked;
 
   // Escape key exits focus mode
   useEffect(() => {
@@ -505,6 +510,9 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         })
         .on('drag', function(event) {
           event.sourceEvent.preventDefault();
+
+          // When drag is locked, ignore all drag movement
+          if (dragLockedRef.current) return;
 
           // Get the node group dynamically using 'this'
           const currentNodeGroup = d3.select(this);
@@ -1190,6 +1198,21 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           title={freePan ? 'Switch to drag mode' : 'Switch to free pan mode'}
         >
           {freePan ? <Move className="w-4 h-4" /> : <Hand className="w-4 h-4" />}
+        </button>
+        <button
+          onClick={() => setDragLocked((v) => {
+            const next = !v;
+            localStorage.setItem('dragLocked', String(next));
+            return next;
+          })}
+          className={`p-2 rounded-lg transition-colors ${
+            dragLocked
+              ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400'
+              : 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300'
+          }`}
+          title={dragLocked ? 'Unlock node dragging' : 'Lock node positions'}
+        >
+          {dragLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
         </button>
         <div className="w-px h-5 bg-stone-200 dark:bg-stone-700 mx-0.5" />
         <button
