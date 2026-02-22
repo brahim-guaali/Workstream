@@ -25,21 +25,21 @@ service cloud.firestore {
       match /projects/{projectId} {
         // Owner has full access
         allow read, write: if request.auth != null && request.auth.uid == userId;
-        // Shared users can read if their UID is in shared_with_uids
-        allow read: if request.auth != null && request.auth.uid in resource.data.shared_with_uids;
-        // Shared editors can update (but not delete) if their UID is in shared_with_editor_uids
-        allow update: if request.auth != null && request.auth.uid in resource.data.shared_with_editor_uids;
+        // Shared users can read if their UID is in sharedWithUids
+        allow read: if request.auth != null && request.auth.uid in resource.data.sharedWithUids;
+        // Shared editors can update (but not delete) if their UID is in sharedWithEditorUids
+        allow update: if request.auth != null && request.auth.uid in resource.data.sharedWithEditorUids;
 
         // Streams subcollection
         match /streams/{streamId} {
           // Owner has full access
           allow read, write: if request.auth != null && request.auth.uid == userId;
-          // Shared users can read if in parent project's shared_with_uids
+          // Shared users can read if in parent project's sharedWithUids
           allow read: if request.auth != null
-            && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)/projects/$(projectId)).data.shared_with_uids;
-          // Shared editors can write if in parent project's shared_with_editor_uids
+            && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)/projects/$(projectId)).data.sharedWithUids;
+          // Shared editors can write if in parent project's sharedWithEditorUids
           allow write: if request.auth != null
-            && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)/projects/$(projectId)).data.shared_with_editor_uids;
+            && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)/projects/$(projectId)).data.sharedWithEditorUids;
 
           // Events subcollection
           match /events/{eventId} {
@@ -47,10 +47,10 @@ service cloud.firestore {
             allow read, write: if request.auth != null && request.auth.uid == userId;
             // Shared users can read
             allow read: if request.auth != null
-              && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)/projects/$(projectId)).data.shared_with_uids;
+              && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)/projects/$(projectId)).data.sharedWithUids;
             // Shared editors can write
             allow write: if request.auth != null
-              && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)/projects/$(projectId)).data.shared_with_editor_uids;
+              && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)/projects/$(projectId)).data.sharedWithEditorUids;
           }
         }
       }
