@@ -14,6 +14,10 @@ A visual project tracker that shows how work branches over time. Track parallel 
 - **Import / Export**: Full JSON import/export with metrics, streams, events, and positions preserved
 - **Google Auth**: Sign in with Google via Firebase Authentication
 
+
+https://github.com/user-attachments/assets/37d18491-6b29-4698-9c46-078cf517bcaa
+
+
 ## Tech Stack
 
 - **Frontend**: React 19, TypeScript, Vite
