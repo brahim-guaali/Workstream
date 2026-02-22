@@ -4,25 +4,30 @@ A visual project tracker that shows how work branches over time. Track parallel 
 
 ## Features
 
-- **Dual Visualization**: Switch between tree and timeline views
-- **Stream Management**: Create, branch, and track workstreams
-- **Rich Context**: Add notes, change status, and link artifacts
-- **Event History**: Full audit trail of stream changes
-- **Source Types**: Categorize streams (task, investigation, meeting, blocker, discovery)
+- **Visual Stream Tree**: Interactive canvas with drag-and-drop, zoom, and pan navigation
+- **Stream Management**: Create, branch, and track workstreams in a nested hierarchy
+- **Rich Context**: Add notes, change status, and link artifacts to any stream
+- **Project Metrics**: Track key metrics with change percentages and optional targets
+- **Stream Dependencies**: Define dependencies between streams
+- **Source Types**: Categorize streams as task, investigation, meeting, blocker, or discovery
+- **Export Formats**: Export projects as JSON (data backup), Markdown (readable document), or PDF (print)
+- **Import / Export**: Full JSON import/export with metrics, streams, events, and positions preserved
+- **Google Auth**: Sign in with Google via Firebase Authentication
 
 ## Tech Stack
 
-- **Frontend**: React 18, TypeScript, Vite
-- **Styling**: TailwindCSS
+- **Frontend**: React 19, TypeScript, Vite
+- **Styling**: TailwindCSS 4
 - **Visualization**: D3.js
-- **Backend**: Supabase (PostgreSQL + Auth)
+- **Backend**: Firebase (Firestore + Auth)
+- **Hosting**: Firebase Hosting
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 20+
-- A Supabase project
+- A Firebase project with Firestore and Authentication enabled
 
 ### Installation
 
@@ -30,46 +35,74 @@ A visual project tracker that shows how work branches over time. Track parallel 
 # Install dependencies
 npm install
 
-# Copy environment variables
-cp .env.example .env
-
-# Add your Supabase credentials to .env
-# VITE_SUPABASE_URL=your-project-url
-# VITE_SUPABASE_ANON_KEY=your-anon-key
+# Create .env with your Firebase config
+cat > .env << 'EOF'
+VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
+VITE_FIREBASE_MEASUREMENT_ID=your-measurement-id
+VITE_LOGO_URL=/your-logo.svg
+EOF
 
 # Start development server
 npm run dev
 ```
 
-### Database Setup
+### Environment Variables
 
-1. Create a new Supabase project
-2. Run the migration in `supabase/migrations/001_initial_schema.sql`
-3. Enable Row Level Security (already included in migration)
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_FIREBASE_API_KEY` | Yes | Firebase API key |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Yes | Firebase auth domain |
+| `VITE_FIREBASE_PROJECT_ID` | Yes | Firebase project ID |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Yes | Firebase storage bucket |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Yes | Firebase messaging sender ID |
+| `VITE_FIREBASE_APP_ID` | Yes | Firebase app ID |
+| `VITE_FIREBASE_MEASUREMENT_ID` | No | Google Analytics measurement ID |
+| `VITE_LOGO_URL` | No | Logo image URL shown on the sign-in page |
+
+### Firebase Setup
+
+1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
+2. Enable **Firestore Database**
+3. Enable **Authentication** with Google sign-in provider
+4. Copy your Firebase config values into `.env`
 
 ## Project Structure
 
 ```
 src/
 ├── components/
-│   ├── layout/          # Header, Layout
-│   ├── project/         # ProjectList, ProjectCard
-│   ├── stream/          # StreamDetail, AddStreamModal
-│   ├── visualization/   # StreamTree, TimelineView, ViewToggle
-│   └── ui/              # Button, Modal, Input, etc.
-├── hooks/               # useProjects, useStreams, useVisualization
-├── lib/                 # supabase.ts, utils.ts
-├── types/               # database.ts
-└── pages/               # HomePage, ProjectPage
+│   ├── auth/              # SignIn
+│   ├── layout/            # Header, Layout
+│   ├── project/           # ProjectList, ProjectCard
+│   ├── stream/            # StreamDetail, AddStreamModal
+│   ├── visualization/     # StreamTree (D3 canvas)
+│   └── ui/                # Button, Modal, Input, Textarea
+├── contexts/              # AuthContext
+├── hooks/                 # useProjects, useStreams, useEvents
+├── lib/                   # firebase.ts, utils.ts, exportDocument.ts
+├── types/                 # database.ts
+└── pages/                 # HomePage, ProjectPage
 ```
 
 ## Available Scripts
 
 ```bash
 npm run dev      # Start development server
-npm run build    # Build for production
+npm run build    # Type-check and build for production
 npm run preview  # Preview production build
 npm run lint     # Run ESLint
+```
+
+## Deployment
+
+```bash
+npm run build
+firebase deploy --only hosting --project your-project-id
 ```
 
 ## License
