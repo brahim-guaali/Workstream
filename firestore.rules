@@ -2,9 +2,58 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // User isolation: users can only access their own data
-    match /users/{userId}/{document=**} {
+
+    // Email→UID lookup collection
+    match /user_emails/{email} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+
+    // Shared projects index
+    match /shared_projects/{docId} {
+      allow read: if request.auth != null && resource.data.shared_with_uid == request.auth.uid;
+      allow create, update: if request.auth != null && request.resource.data.owner_uid == request.auth.uid;
+      allow delete: if request.auth != null && (resource.data.owner_uid == request.auth.uid || resource.data.shared_with_uid == request.auth.uid);
+    }
+
+    // User data
+    match /users/{userId} {
+      // Allow owner full access to their user document
       allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Projects
+      match /projects/{projectId} {
+        // Owner has full access
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        // Shared users can read if their UID is in shared_with_uids
+        allow read: if request.auth != null && request.auth.uid in resource.data.shared_with_uids;
+        // Shared editors can update (but not delete) if their UID is in shared_with_editor_uids
+        allow update: if request.auth != null && request.auth.uid in resource.data.shared_with_editor_uids;
+
+        // Streams subcollection
+        match /streams/{streamId} {
+          // Owner has full access
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+          // Shared users can read if in parent project's shared_with_uids
+          allow read: if request.auth != null
+            && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)/projects/$(projectId)).data.shared_with_uids;
+          // Shared editors can write if in parent project's shared_with_editor_uids
+          allow write: if request.auth != null
+            && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)/projects/$(projectId)).data.shared_with_editor_uids;
+
+          // Events subcollection
+          match /events/{eventId} {
+            // Owner has full access
+            allow read, write: if request.auth != null && request.auth.uid == userId;
+            // Shared users can read
+            allow read: if request.auth != null
+              && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)/projects/$(projectId)).data.shared_with_uids;
+            // Shared editors can write
+            allow write: if request.auth != null
+              && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)/projects/$(projectId)).data.shared_with_editor_uids;
+          }
+        }
+      }
     }
   }
 }

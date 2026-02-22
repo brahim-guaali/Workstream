@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Upload, Pencil, X, Check, BarChart3, ChevronDown, FileText, FileDown, FileJson } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Pencil, X, Check, BarChart3, ChevronDown, FileText, FileDown, FileJson, Share2, Eye } from 'lucide-react';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -9,6 +9,7 @@ import { Textarea } from '../components/ui/Textarea';
 import { StreamTree } from '../components/visualization/StreamTree';
 import { StreamDetail } from '../components/stream/StreamDetail';
 import { AddStreamModal } from '../components/stream/AddStreamModal';
+import { ShareProjectModal } from '../components/project/ShareProjectModal';
 import { useStreams } from '../hooks/useStreams';
 import { useEvents } from '../hooks/useEvents';
 import { useProject } from '../hooks/useProjects';
@@ -21,12 +22,14 @@ import type { ExportData } from '../lib/exportDocument';
 import type { StreamWithChildren, ProjectMetric } from '../types/database';
 
 export function ProjectPage() {
-  const { projectId } = useParams<{ projectId: string }>();
-  const { project, updateProject } = useProject(projectId);
+  const { projectId, ownerId } = useParams<{ projectId: string; ownerId: string }>();
+  const { project, updateProject, userRole } = useProject(projectId, ownerId);
+  const isReadOnly = userRole === 'viewer';
+  const isOwner = userRole === 'owner';
   const [isEditingProject, setIsEditingProject] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
-  const { streams, streamTree, loading, createStream, updateStream, deleteStream, exportProject, importProject } = useStreams(projectId);
+  const { streams, streamTree, loading, createStream, updateStream, deleteStream, exportProject, importProject } = useStreams(projectId, ownerId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedStream, setSelectedStream] = useState<StreamWithChildren | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -51,8 +54,9 @@ export function ProjectPage() {
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
   const [focusedStreamId, setFocusedStreamId] = useState<string | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  const { events, loading: eventsLoading, createEvent, deleteEvent } = useEvents(projectId, selectedStream?.id);
+  const { events, loading: eventsLoading, createEvent, deleteEvent } = useEvents(projectId, selectedStream?.id, ownerId);
 
   // Compute display tree for focus mode
   const displayTree = useMemo(
@@ -163,9 +167,11 @@ export function ProjectPage() {
     // When a stream is marked done, prompt user to update metrics
     if (updates.status === 'done' && selectedStream.status !== 'done') {
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-      setMetricsPromptStreamName(selectedStream.title);
-      setPromptMetrics((project?.metrics ?? []).map((m) => ({ ...m })));
-      setMetricsPromptOpen(true);
+      if (!isReadOnly) {
+        setMetricsPromptStreamName(selectedStream.title);
+        setPromptMetrics((project?.metrics ?? []).map((m) => ({ ...m })));
+        setMetricsPromptOpen(true);
+      }
     }
   };
 
@@ -391,31 +397,49 @@ export function ProjectPage() {
                 <h1 className="text-lg font-bold text-stone-900 dark:text-stone-100 truncate">
                   {project?.name || 'Project'}
                 </h1>
-                <button
-                  onClick={() => {
-                    setEditName(project?.name || '');
-                    setEditDescription(project?.description || '');
-                    setIsEditingProject(true);
-                  }}
-                  className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Pencil className="w-4 h-4 text-stone-400" />
-                </button>
+                {!isReadOnly && (
+                  <button
+                    onClick={() => {
+                      setEditName(project?.name || '');
+                      setEditDescription(project?.description || '');
+                      setIsEditingProject(true);
+                    }}
+                    className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Pencil className="w-4 h-4 text-stone-400" />
+                  </button>
+                )}
               </div>
+              {/* Shared indicator for non-owners */}
+              {!isOwner && project?.owner_email && (
+                <span className="flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 px-2 py-1 rounded-md">
+                  <Eye className="w-3 h-3" />
+                  Shared by {project.owner_email}
+                </span>
+              )}
+              {isReadOnly && (
+                <span className="text-xs font-medium px-2 py-1 rounded-md bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                  View only
+                </span>
+              )}
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                className="hidden"
-              />
-              <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="w-4 h-4 mr-1" />
-                Import
-              </Button>
+              {!isReadOnly && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json"
+                    onChange={handleImport}
+                    className="hidden"
+                  />
+                  <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="w-4 h-4 mr-1" />
+                    Import
+                  </Button>
+                </>
+              )}
               <div className="relative" ref={exportDropdownRef}>
                 <Button variant="secondary" size="sm" onClick={() => setExportDropdownOpen(!exportDropdownOpen)}>
                   <Download className="w-4 h-4 mr-1" />
@@ -448,10 +472,18 @@ export function ProjectPage() {
                   </div>
                 )}
               </div>
-              <Button onClick={handleOpenAddModal}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Stream
-              </Button>
+              {isOwner && (
+                <Button variant="secondary" size="sm" onClick={() => setIsShareModalOpen(true)}>
+                  <Share2 className="w-4 h-4 mr-1" />
+                  Share
+                </Button>
+              )}
+              {!isReadOnly && (
+                <Button onClick={handleOpenAddModal}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Stream
+                </Button>
+              )}
             </div>
           </div>
 
@@ -506,7 +538,7 @@ export function ProjectPage() {
           {/* Metrics row */}
           <div className="px-4 pb-2.5 flex flex-wrap items-center gap-2 text-sm">
             {(project?.metrics ?? []).map((m) =>
-              editingMetricId === m.id ? (
+              editingMetricId === m.id && !isReadOnly ? (
                 <div key={m.id} className="flex items-center gap-1.5">
                   <input
                     className="w-24 px-2 py-1 text-xs rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
@@ -545,8 +577,9 @@ export function ProjectPage() {
               ) : (
                 <span
                   key={m.id}
-                  className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 cursor-pointer hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-colors group/metric"
+                  className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 ${!isReadOnly ? 'cursor-pointer hover:bg-cyan-100 dark:hover:bg-cyan-900/50' : ''} transition-colors group/metric`}
                   onClick={() => {
+                    if (isReadOnly) return;
                     setEditingMetricId(m.id);
                     setEditMetricName(m.name);
                     setEditMetricValue(String(m.value));
@@ -569,72 +602,76 @@ export function ProjectPage() {
                       </span>
                     );
                   })()}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveMetric(m.id);
-                    }}
-                    className="ml-0.5 p-0.5 rounded hover:bg-cyan-200 dark:hover:bg-cyan-800 opacity-0 group-hover/metric:opacity-100 transition-opacity"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
+                  {!isReadOnly && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveMetric(m.id);
+                      }}
+                      className="ml-0.5 p-0.5 rounded hover:bg-cyan-200 dark:hover:bg-cyan-800 opacity-0 group-hover/metric:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
                 </span>
               )
             )}
 
-            {isAddingMetric ? (
-              <div className="flex items-center gap-1.5">
-                <input
-                  className="w-24 px-2 py-1 text-xs rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  value={newMetricName}
-                  onChange={(e) => setNewMetricName(e.target.value)}
-                  placeholder="Name"
-                  autoFocus
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddMetric()}
-                />
-                <input
-                  type="number"
-                  className="w-16 px-2 py-1 text-xs rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  value={newMetricValue}
-                  onChange={(e) => setNewMetricValue(e.target.value)}
-                  placeholder="Value"
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddMetric()}
-                />
-                <input
-                  type="number"
-                  className="w-16 px-2 py-1 text-xs rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                  value={newMetricTarget}
-                  onChange={(e) => setNewMetricTarget(e.target.value)}
-                  placeholder="Target"
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddMetric()}
-                />
+            {!isReadOnly && (
+              isAddingMetric ? (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    className="w-24 px-2 py-1 text-xs rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    value={newMetricName}
+                    onChange={(e) => setNewMetricName(e.target.value)}
+                    placeholder="Name"
+                    autoFocus
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddMetric()}
+                  />
+                  <input
+                    type="number"
+                    className="w-16 px-2 py-1 text-xs rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    value={newMetricValue}
+                    onChange={(e) => setNewMetricValue(e.target.value)}
+                    placeholder="Value"
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddMetric()}
+                  />
+                  <input
+                    type="number"
+                    className="w-16 px-2 py-1 text-xs rounded-lg border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    value={newMetricTarget}
+                    onChange={(e) => setNewMetricTarget(e.target.value)}
+                    placeholder="Target"
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddMetric()}
+                  />
+                  <button
+                    onClick={handleAddMetric}
+                    disabled={!newMetricName.trim() || !newMetricValue.trim()}
+                    className="p-1 rounded-lg hover:bg-cyan-100 dark:hover:bg-cyan-900/30 text-cyan-600 disabled:opacity-40"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsAddingMetric(false);
+                      setNewMetricName('');
+                      setNewMetricValue('');
+                      setNewMetricTarget('');
+                    }}
+                    className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
                 <button
-                  onClick={handleAddMetric}
-                  disabled={!newMetricName.trim() || !newMetricValue.trim()}
-                  className="p-1 rounded-lg hover:bg-cyan-100 dark:hover:bg-cyan-900/30 text-cyan-600 disabled:opacity-40"
+                  onClick={() => setIsAddingMetric(true)}
+                  className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border border-dashed border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-colors"
                 >
-                  <Check className="w-3.5 h-3.5" />
+                  <BarChart3 className="w-3 h-3" />
+                  Add Metric
                 </button>
-                <button
-                  onClick={() => {
-                    setIsAddingMetric(false);
-                    setNewMetricName('');
-                    setNewMetricValue('');
-                    setNewMetricTarget('');
-                  }}
-                  className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsAddingMetric(true)}
-                className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border border-dashed border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-colors"
-              >
-                <BarChart3 className="w-3 h-3" />
-                Add Metric
-              </button>
+              )
             )}
           </div>
         </div>
@@ -652,12 +689,16 @@ export function ProjectPage() {
                   No streams yet
                 </h3>
                 <p className="text-stone-500 dark:text-stone-400 mb-4 max-w-sm">
-                  Start by creating your first stream to track your project's evolution
+                  {isReadOnly
+                    ? 'This project has no streams yet.'
+                    : 'Start by creating your first stream to track your project\'s evolution'}
                 </p>
-                <Button onClick={handleOpenAddModal}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create First Stream
-                </Button>
+                {!isReadOnly && (
+                  <Button onClick={handleOpenAddModal}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create First Stream
+                  </Button>
+                )}
               </div>
             ) : (
               <StreamTree
@@ -665,7 +706,7 @@ export function ProjectPage() {
                 selectedStreamId={selectedStream?.id || null}
                 onSelectStream={handleSelectStream}
                 onUpdateStreamPosition={handleUpdateStreamPosition}
-                onCreateChildSlice={handleCreateChildSlice}
+                onCreateChildSlice={isReadOnly ? undefined : handleCreateChildSlice}
                 pendingSlice={pendingSlice}
                 focusedStreamId={focusedStreamId}
                 onExitFocus={() => setFocusedStreamId(null)}
@@ -689,24 +730,36 @@ export function ProjectPage() {
                 isFocused={focusedStreamId === selectedStream.id}
                 onFocusStream={() => setFocusedStreamId(selectedStream.id)}
                 onExitFocus={() => setFocusedStreamId(null)}
+                isReadOnly={isReadOnly}
               />
             </div>
           )}
         </div>
       </div>
 
-      <AddStreamModal
-        isOpen={isAddModalOpen}
-        onClose={() => {
-          setIsAddModalOpen(false);
-          setBranchFromStreamId(null);
-          setNewSlicePosition(null);
-          setPendingSlice(null);
-        }}
-        onSubmit={handleCreateStream}
-        streams={streamTree}
-        defaultParentId={branchFromStreamId}
-      />
+      {!isReadOnly && (
+        <AddStreamModal
+          isOpen={isAddModalOpen}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setBranchFromStreamId(null);
+            setNewSlicePosition(null);
+            setPendingSlice(null);
+          }}
+          onSubmit={handleCreateStream}
+          streams={streamTree}
+          defaultParentId={branchFromStreamId}
+        />
+      )}
+
+      {/* Share Modal */}
+      {isOwner && project && (
+        <ShareProjectModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          project={project}
+        />
+      )}
 
       {/* Update Metrics Prompt (shown when a stream is marked done) */}
       <Modal

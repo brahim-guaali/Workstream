@@ -27,15 +27,16 @@ type StreamInput = {
   branched_from_event_id: string | null;
 };
 
-export function useStreams(projectId: string | undefined) {
+export function useStreams(projectId: string | undefined, ownerId?: string) {
   const { user } = useAuth();
+  const resolvedOwnerId = ownerId || user?.uid;
   const [streams, setStreams] = useState<Stream[]>([]);
   const [streamTree, setStreamTree] = useState<StreamWithChildren[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user || !projectId) {
+    if (!user || !projectId || !resolvedOwnerId) {
       // Reset state when dependencies are not available
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setStreams([]);
@@ -47,7 +48,7 @@ export function useStreams(projectId: string | undefined) {
     setLoading(true);
     setError(null);
 
-    const streamsRef = collection(db, 'users', user.uid, 'projects', projectId, 'streams');
+    const streamsRef = collection(db, 'users', resolvedOwnerId, 'projects', projectId, 'streams');
     const q = query(streamsRef, orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(
@@ -65,7 +66,7 @@ export function useStreams(projectId: string | undefined) {
             source_type: data.sourceType,
             created_at: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
             updated_at: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-            created_by: user.uid,
+            created_by: resolvedOwnerId,
             branched_from_event_id: data.branchedFromEventId || null,
             position_x: data.positionX ?? undefined,
             position_y: data.positionY ?? undefined,
@@ -83,13 +84,13 @@ export function useStreams(projectId: string | undefined) {
     );
 
     return unsubscribe;
-  }, [user, projectId]);
+  }, [user, projectId, resolvedOwnerId]);
 
   const createStream = useCallback(
     async (stream: StreamInput) => {
-      if (!user) throw new Error('Not authenticated');
+      if (!user || !resolvedOwnerId) throw new Error('Not authenticated');
 
-      const streamsRef = collection(db, 'users', user.uid, 'projects', stream.project_id, 'streams');
+      const streamsRef = collection(db, 'users', resolvedOwnerId, 'projects', stream.project_id, 'streams');
       const docRef = await addDoc(streamsRef, {
         title: stream.title,
         description: stream.description,
@@ -117,14 +118,14 @@ export function useStreams(projectId: string | undefined) {
         dependencies: [],
       } as Stream;
     },
-    [user]
+    [user, resolvedOwnerId]
   );
 
   const updateStream = useCallback(
     async (id: string, updates: Partial<Stream>) => {
-      if (!user || !projectId) throw new Error('Not authenticated');
+      if (!user || !projectId || !resolvedOwnerId) throw new Error('Not authenticated');
 
-      const streamRef = doc(db, 'users', user.uid, 'projects', projectId, 'streams', id);
+      const streamRef = doc(db, 'users', resolvedOwnerId, 'projects', projectId, 'streams', id);
       const updateData: Record<string, unknown> = {
         updatedAt: serverTimestamp(),
       };
@@ -146,17 +147,17 @@ export function useStreams(projectId: string | undefined) {
         updated_at: new Date().toISOString(),
       } as Stream;
     },
-    [user, projectId]
+    [user, projectId, resolvedOwnerId]
   );
 
   const deleteStream = useCallback(
     async (id: string) => {
-      if (!user || !projectId) throw new Error('Not authenticated');
+      if (!user || !projectId || !resolvedOwnerId) throw new Error('Not authenticated');
 
-      const streamRef = doc(db, 'users', user.uid, 'projects', projectId, 'streams', id);
+      const streamRef = doc(db, 'users', resolvedOwnerId, 'projects', projectId, 'streams', id);
       await deleteDoc(streamRef);
     },
-    [user, projectId]
+    [user, projectId, resolvedOwnerId]
   );
 
   const fetchStreams = useCallback(() => {
@@ -183,7 +184,7 @@ export function useStreams(projectId: string | undefined) {
   };
 
   const exportProject = useCallback(async () => {
-    if (!user || !projectId) throw new Error('Not authenticated');
+    if (!user || !projectId || !resolvedOwnerId) throw new Error('Not authenticated');
 
     // Fetch events for all streams
     const streamEventsMap = new Map<string, Array<{
@@ -197,7 +198,7 @@ export function useStreams(projectId: string | undefined) {
       const eventsRef = collection(
         db,
         'users',
-        user.uid,
+        resolvedOwnerId,
         'projects',
         projectId,
         'streams',
@@ -241,7 +242,7 @@ export function useStreams(projectId: string | undefined) {
       exportedAt: new Date().toISOString(),
       streams: buildExportTree(null),
     };
-  }, [user, projectId, streams]);
+  }, [user, projectId, resolvedOwnerId, streams]);
 
   type ImportedStream = {
     id: string;
@@ -267,14 +268,14 @@ export function useStreams(projectId: string | undefined) {
       version: number;
       streams: ImportedStream[];
     }) => {
-      if (!user || !projectId) throw new Error('Not authenticated');
+      if (!user || !projectId || !resolvedOwnerId) throw new Error('Not authenticated');
 
       // Recursively import streams with their children
       const importStreamWithChildren = async (
         stream: ImportedStream,
         parentStreamId: string | null
       ) => {
-        const streamsRef = collection(db, 'users', user.uid, 'projects', projectId, 'streams');
+        const streamsRef = collection(db, 'users', resolvedOwnerId, 'projects', projectId, 'streams');
         const docRef = await addDoc(streamsRef, {
           title: stream.title,
           description: stream.description,
@@ -294,7 +295,7 @@ export function useStreams(projectId: string | undefined) {
           const eventsRef = collection(
             db,
             'users',
-            user.uid,
+            resolvedOwnerId,
             'projects',
             projectId,
             'streams',
@@ -320,7 +321,7 @@ export function useStreams(projectId: string | undefined) {
         await importStreamWithChildren(stream, null);
       }
     },
-    [user, projectId]
+    [user, projectId, resolvedOwnerId]
   );
 
   return {

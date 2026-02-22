@@ -69,7 +69,7 @@ export function ProjectList({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {projects.map((project) => (
-            <Link key={project.id} to={`/project/${project.id}`}>
+            <Link key={project.id} to={`/project/${project.user_id}/${project.id}`}>
               <ProjectCard project={project} onDelete={onDeleteProject} />
             </Link>
           ))}

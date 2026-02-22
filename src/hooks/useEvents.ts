@@ -20,14 +20,15 @@ type EventInput = {
   metadata: Record<string, unknown> | null;
 };
 
-export function useEvents(projectId: string | undefined, streamId: string | undefined) {
+export function useEvents(projectId: string | undefined, streamId: string | undefined, ownerId?: string) {
   const { user } = useAuth();
+  const resolvedOwnerId = ownerId || user?.uid;
   const [events, setEvents] = useState<StreamEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user || !projectId || !streamId) {
+    if (!user || !projectId || !streamId || !resolvedOwnerId) {
       // Reset state when dependencies are not available
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setEvents([]);
@@ -41,7 +42,7 @@ export function useEvents(projectId: string | undefined, streamId: string | unde
     const eventsRef = collection(
       db,
       'users',
-      user.uid,
+      resolvedOwnerId,
       'projects',
       projectId,
       'streams',
@@ -75,16 +76,16 @@ export function useEvents(projectId: string | undefined, streamId: string | unde
     );
 
     return unsubscribe;
-  }, [user, projectId, streamId]);
+  }, [user, projectId, streamId, resolvedOwnerId]);
 
   const createEvent = useCallback(
     async (event: EventInput) => {
-      if (!user || !projectId) throw new Error('Not authenticated');
+      if (!user || !projectId || !resolvedOwnerId) throw new Error('Not authenticated');
 
       const eventsRef = collection(
         db,
         'users',
-        user.uid,
+        resolvedOwnerId,
         'projects',
         projectId,
         'streams',
@@ -108,17 +109,17 @@ export function useEvents(projectId: string | undefined, streamId: string | unde
         created_by: user.uid,
       } as StreamEvent;
     },
-    [user, projectId]
+    [user, projectId, resolvedOwnerId]
   );
 
   const deleteEvent = useCallback(
     async (id: string) => {
-      if (!user || !projectId || !streamId) throw new Error('Not authenticated');
+      if (!user || !projectId || !streamId || !resolvedOwnerId) throw new Error('Not authenticated');
 
       const eventRef = doc(
         db,
         'users',
-        user.uid,
+        resolvedOwnerId,
         'projects',
         projectId,
         'streams',
@@ -128,7 +129,7 @@ export function useEvents(projectId: string | undefined, streamId: string | unde
       );
       await deleteDoc(eventRef);
     },
-    [user, projectId, streamId]
+    [user, projectId, streamId, resolvedOwnerId]
   );
 
   const fetchEvents = useCallback(() => {

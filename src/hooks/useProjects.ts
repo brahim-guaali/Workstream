@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import type { Project, ProjectMetric } from '../types/database';
+import type { Project, ProjectMetric, ShareRole } from '../types/database';
 
 type ProjectInput = {
   name: string;
@@ -21,20 +21,27 @@ type ProjectInput = {
 
 type ProjectUpdates = Partial<Project> & { metrics?: ProjectMetric[] };
 
-export function useProject(projectId: string | undefined) {
+export function useProject(projectId: string | undefined, ownerId?: string) {
   const { user } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const resolvedOwnerId = ownerId || user?.uid;
+
+  const userRole: 'owner' | ShareRole = resolvedOwnerId === user?.uid ? 'owner' : (() => {
+    if (!project?.shared_with || !user) return 'viewer' as ShareRole;
+    const share = project.shared_with.find(s => s.uid === user.uid);
+    return share?.role ?? 'viewer' as ShareRole;
+  })();
 
   useEffect(() => {
-    if (!user || !projectId) {
+    if (!user || !projectId || !resolvedOwnerId) {
       setProject(null);
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    const projectRef = doc(db, 'users', user.uid, 'projects', projectId);
+    const projectRef = doc(db, 'users', resolvedOwnerId, 'projects', projectId);
     const unsubscribe = onSnapshot(projectRef, (snap) => {
       if (snap.exists()) {
         const data = snap.data();
@@ -46,24 +53,29 @@ export function useProject(projectId: string | undefined) {
             ...m,
             initialValue: m.initialValue ?? m.value,
           })),
-          user_id: user.uid,
+          user_id: resolvedOwnerId,
           created_at: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
           updated_at: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          shared_with: data.sharedWith ?? [],
+          owner_email: data.ownerEmail ?? '',
         });
       } else {
         setProject(null);
       }
       setLoading(false);
+    }, () => {
+      setProject(null);
+      setLoading(false);
     });
 
     return unsubscribe;
-  }, [user, projectId]);
+  }, [user, projectId, resolvedOwnerId]);
 
   const updateProject = useCallback(
     async (updates: ProjectUpdates) => {
-      if (!user || !projectId) throw new Error('Not authenticated');
+      if (!user || !projectId || !resolvedOwnerId) throw new Error('Not authenticated');
 
-      const projectRef = doc(db, 'users', user.uid, 'projects', projectId);
+      const projectRef = doc(db, 'users', resolvedOwnerId, 'projects', projectId);
       const updateData: Record<string, unknown> = {
         updatedAt: serverTimestamp(),
       };
@@ -73,10 +85,10 @@ export function useProject(projectId: string | undefined) {
 
       await updateDoc(projectRef, updateData);
     },
-    [user, projectId]
+    [user, projectId, resolvedOwnerId]
   );
 
-  return { project, loading, updateProject };
+  return { project, loading, updateProject, userRole };
 }
 
 export function useProjects() {
@@ -116,6 +128,8 @@ export function useProjects() {
             user_id: user.uid,
             created_at: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
             updated_at: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+            shared_with: data.sharedWith ?? [],
+            owner_email: data.ownerEmail ?? '',
           };
         });
         setProjects(projectList);
@@ -139,6 +153,10 @@ export function useProjects() {
         name: project.name,
         description: project.description,
         metrics: [],
+        sharedWith: [],
+        sharedWithUids: [],
+        sharedWithEditorUids: [],
+        ownerEmail: user.email || '',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -151,6 +169,8 @@ export function useProjects() {
         user_id: user.uid,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        shared_with: [],
+        owner_email: user.email || '',
       } as Project;
     },
     [user]

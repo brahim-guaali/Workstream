@@ -2,6 +2,26 @@ import type { StreamStatus, SourceType } from '../lib/streamConfig';
 export type { StreamStatus, SourceType };
 export type EventType = 'note' | 'status_change' | 'artifact_link' | 'created';
 export type ArtifactType = 'pr' | 'ticket' | 'doc' | 'link';
+export type ShareRole = 'viewer' | 'editor';
+
+export interface ProjectShare {
+  email: string;
+  uid: string | null;
+  role: ShareRole;
+  added_at: string;
+}
+
+export interface SharedProjectRef {
+  id: string;
+  owner_uid: string;
+  owner_email: string;
+  owner_display_name: string;
+  project_id: string;
+  project_name: string;
+  role: ShareRole;
+  shared_with_uid: string;
+  updatedAt: unknown;
+}
 
 export interface ProjectMetric {
   id: string;
@@ -19,6 +39,8 @@ export interface Project {
   created_at: string;
   updated_at: string;
   user_id: string;
+  shared_with: ProjectShare[];
+  owner_email: string;
 }
 
 export interface Stream {

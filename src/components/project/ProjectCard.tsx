@@ -1,4 +1,4 @@
-import { Trash2, MoreVertical, GitBranch, Calendar } from 'lucide-react';
+import { Trash2, MoreVertical, GitBranch, Calendar, Users } from 'lucide-react';
 import type { Project } from '../../types/database';
 import { formatDate, getRelativeTime, metricProgress } from '../../lib/utils';
 import { useState, useEffect } from 'react';
@@ -20,7 +20,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
 
   useEffect(() => {
     if (!user) return;
-    const streamsRef = collection(db, 'users', user.uid, 'projects', project.id, 'streams');
+    const streamsRef = collection(db, 'users', project.user_id, 'projects', project.id, 'streams');
     const unsubscribe = onSnapshot(query(streamsRef), (snapshot) => {
       // Find parent IDs to identify leaf nodes (streams with no children)
       const parentIds = new Set(
@@ -67,6 +67,12 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
           <h3 className="font-semibold text-stone-900 dark:text-stone-100 truncate text-base">
             {project.name}
           </h3>
+          {project.shared_with && project.shared_with.length > 0 && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-md bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400 mt-1">
+              <Users className="w-3 h-3" />
+              Shared ({project.shared_with.length})
+            </span>
+          )}
           {project.description && (
             <p className="mt-1.5 text-sm text-stone-500 dark:text-stone-400 line-clamp-2 leading-relaxed">
               {project.description}

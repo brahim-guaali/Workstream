@@ -1,11 +1,11 @@
 import { useState, type KeyboardEvent, type ReactNode } from 'react';
-import { X, Plus, Trash2, MessageSquare, GitBranch, Pencil, Check, Tag, Focus } from 'lucide-react';
+import { X, Plus, Trash2, MessageSquare, GitBranch, Pencil, Check, Tag, Focus, Eye } from 'lucide-react';
 import type { Stream, StreamEvent, StreamStatus, SourceType } from '../../types/database';
 import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { formatDateTime, getRelativeTime } from '../../lib/utils';
-import { statusOptions, sourceTypeOptions } from '../../lib/streamConfig';
+import { statusOptions, sourceTypeOptions, STATUS_CONFIG, SOURCE_TYPE_CONFIG } from '../../lib/streamConfig';
 
 const URL_REGEX = /(https?:\/\/[^\s<]+)/g;
 
@@ -42,6 +42,7 @@ interface StreamDetailProps {
   isFocused?: boolean;
   onFocusStream?: () => void;
   onExitFocus?: () => void;
+  isReadOnly?: boolean;
 }
 
 export function StreamDetail({
@@ -57,6 +58,7 @@ export function StreamDetail({
   isFocused,
   onFocusStream,
   onExitFocus,
+  isReadOnly,
 }: StreamDetailProps) {
   const [newNote, setNewNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
@@ -172,7 +174,7 @@ export function StreamDetail({
       <div className="flex-shrink-0 p-4 border-b border-stone-200 dark:border-stone-800">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            {isEditingTitle ? (
+            {isEditingTitle && !isReadOnly ? (
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -203,15 +205,17 @@ export function StreamDetail({
                 <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100 truncate">
                   {stream.title}
                 </h2>
-                <button
-                  onClick={() => setIsEditingTitle(true)}
-                  className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Pencil className="w-4 h-4 text-stone-400" />
-                </button>
+                {!isReadOnly && (
+                  <button
+                    onClick={() => setIsEditingTitle(true)}
+                    className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Pencil className="w-4 h-4 text-stone-400" />
+                  </button>
+                )}
               </div>
             )}
-            {isEditingDate ? (
+            {isEditingDate && !isReadOnly ? (
               <div className="mt-1 flex items-center gap-2">
                 <input
                   type="datetime-local"
@@ -237,16 +241,24 @@ export function StreamDetail({
                 <p className="text-sm text-stone-500 dark:text-stone-400">
                   Created {formatDateTime(stream.created_at)}
                 </p>
-                <button
-                  onClick={() => setIsEditingDate(true)}
-                  className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Pencil className="w-3 h-3 text-stone-400" />
-                </button>
+                {!isReadOnly && (
+                  <button
+                    onClick={() => setIsEditingDate(true)}
+                    className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Pencil className="w-3 h-3 text-stone-400" />
+                  </button>
+                )}
               </div>
             )}
           </div>
           <div className="flex items-center gap-1">
+            {isReadOnly && (
+              <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-md mr-1">
+                <Eye className="w-3 h-3" />
+                View only
+              </span>
+            )}
             {onFocusStream && !isFocused && (
               <button
                 onClick={onFocusStream}
@@ -279,27 +291,50 @@ export function StreamDetail({
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* Status and Type */}
         <div className="grid grid-cols-2 gap-4">
-          <Select
-            id="stream-status"
-            label="Status"
-            value={stream.status}
-            onChange={(e) => handleStatusChange(e.target.value as StreamStatus)}
-            options={statusOptions}
-          />
-          <Select
-            id="stream-source-type"
-            label="Type"
-            value={stream.source_type}
-            onChange={(e) => handleSourceTypeChange(e.target.value as SourceType)}
-            options={sourceTypeOptions}
-          />
+          {isReadOnly ? (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Status</label>
+                <span className={`inline-flex items-center text-sm font-medium px-2.5 py-1 rounded-lg ${
+                  stream.status === 'done' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                  stream.status === 'blocked' ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                  'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                }`}>
+                  {STATUS_CONFIG[stream.status]?.label || stream.status}
+                </span>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Type</label>
+                <span className="inline-flex items-center text-sm font-medium px-2.5 py-1 rounded-lg bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300">
+                  {SOURCE_TYPE_CONFIG[stream.source_type]?.label || stream.source_type}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <Select
+                id="stream-status"
+                label="Status"
+                value={stream.status}
+                onChange={(e) => handleStatusChange(e.target.value as StreamStatus)}
+                options={statusOptions}
+              />
+              <Select
+                id="stream-source-type"
+                label="Type"
+                value={stream.source_type}
+                onChange={(e) => handleSourceTypeChange(e.target.value as SourceType)}
+                options={sourceTypeOptions}
+              />
+            </>
+          )}
         </div>
 
         {/* Description */}
         <div>
           <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-2 flex items-center gap-2">
             Description
-            {!isEditingDescription && (
+            {!isReadOnly && !isEditingDescription && (
               <button
                 onClick={() => {
                   setEditedDescription(stream.description || '');
@@ -311,7 +346,7 @@ export function StreamDetail({
               </button>
             )}
           </h3>
-          {isEditingDescription ? (
+          {isEditingDescription && !isReadOnly ? (
             <div className="space-y-2">
               <textarea
                 value={editedDescription}
@@ -341,14 +376,17 @@ export function StreamDetail({
             </div>
           ) : stream.description ? (
             <p
-              className="text-sm text-stone-600 dark:text-stone-400 whitespace-pre-wrap cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-800/50 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors"
+              className={`text-sm text-stone-600 dark:text-stone-400 whitespace-pre-wrap ${!isReadOnly ? 'cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-800/50' : ''} rounded-md px-2 py-1 -mx-2 -my-1 transition-colors`}
               onClick={() => {
+                if (isReadOnly) return;
                 setEditedDescription(stream.description || '');
                 setIsEditingDescription(true);
               }}
             >
               {stream.description}
             </p>
+          ) : isReadOnly ? (
+            <p className="text-sm text-stone-400 dark:text-stone-500">No description</p>
           ) : (
             <button
               onClick={() => {
@@ -378,68 +416,76 @@ export function StreamDetail({
                 className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-200"
               >
                 {dep}
-                <button
-                  onClick={() => handleRemoveDependency(dep)}
-                  className="ml-0.5 hover:text-stone-900 dark:hover:text-white"
-                >
-                  <X className="w-3 h-3" />
-                </button>
+                {!isReadOnly && (
+                  <button
+                    onClick={() => handleRemoveDependency(dep)}
+                    className="ml-0.5 hover:text-stone-900 dark:hover:text-white"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
               </span>
             ))}
           </div>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newDependency}
-              onChange={(e) => setNewDependency(e.target.value)}
-              onKeyDown={handleDependencyKeyDown}
-              placeholder="e.g. Team Backend, QA..."
-              className="flex-1 px-3 py-1.5 text-sm bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 rounded-md text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            />
-            <Button size="sm" variant="secondary" onClick={handleAddDependency} disabled={!newDependency.trim()}>
-              <Plus className="w-4 h-4 mr-1" />
-              Add
-            </Button>
-          </div>
+          {!isReadOnly && (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newDependency}
+                onChange={(e) => setNewDependency(e.target.value)}
+                onKeyDown={handleDependencyKeyDown}
+                placeholder="e.g. Team Backend, QA..."
+                className="flex-1 px-3 py-1.5 text-sm bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 rounded-md text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+              <Button size="sm" variant="secondary" onClick={handleAddDependency} disabled={!newDependency.trim()}>
+                <Plus className="w-4 h-4 mr-1" />
+                Add
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2">
-          <Button size="sm" variant="secondary" onClick={onBranch}>
-            <GitBranch className="w-4 h-4 mr-1" />
-            Branch
-          </Button>
-          <Button
-            size="sm"
-            variant="danger"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            <Trash2 className="w-4 h-4 mr-1" />
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </div>
+        {!isReadOnly && (
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={onBranch}>
+              <GitBranch className="w-4 h-4 mr-1" />
+              Branch
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </div>
+        )}
 
         {/* Add Note */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300">
-            Add Note
-          </h3>
-          <Textarea
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Write an update..."
-            rows={2}
-          />
-          <Button
-            size="sm"
-            onClick={handleAddNote}
-            disabled={!newNote.trim() || isAddingNote}
-          >
-            <Plus className="w-4 h-4 mr-1" />
-            {isAddingNote ? 'Adding...' : 'Add Note'}
-          </Button>
-        </div>
+        {!isReadOnly && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300">
+              Add Note
+            </h3>
+            <Textarea
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              placeholder="Write an update..."
+              rows={2}
+            />
+            <Button
+              size="sm"
+              onClick={handleAddNote}
+              disabled={!newNote.trim() || isAddingNote}
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              {isAddingNote ? 'Adding...' : 'Add Note'}
+            </Button>
+          </div>
+        )}
 
         {/* Event History */}
         <div>
@@ -470,12 +516,14 @@ export function StreamDetail({
                       <p className="text-xs text-stone-400">
                         {getRelativeTime(event.created_at)}
                       </p>
-                      <button
-                        onClick={() => onDeleteEvent(event.id)}
-                        className="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300 opacity-0 group-hover/event:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      {!isReadOnly && (
+                        <button
+                          onClick={() => onDeleteEvent(event.id)}
+                          className="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300 opacity-0 group-hover/event:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

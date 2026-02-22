@@ -7,7 +7,8 @@ import {
   signOut as firebaseSignOut,
   type User,
 } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -26,6 +27,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
+      if (user?.email) {
+        setDoc(doc(db, 'user_emails', user.email), {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+        }, { merge: true }).catch(() => {});
+      }
     });
 
     return unsubscribe;
