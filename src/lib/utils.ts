@@ -123,3 +123,110 @@ export const sourceTypeLabels = {
   discovery: 'Discovery',
   task: 'Task',
 } as const;
+
+// --- Focus mode helpers ---
+
+function countAllNodes(nodes: StreamWithChildren[]): number {
+  let count = 0;
+  for (const node of nodes) {
+    count += 1 + countAllNodes(node.children);
+  }
+  return count;
+}
+
+function collectAllIds(nodes: StreamWithChildren[]): string[] {
+  const ids: string[] = [];
+  for (const node of nodes) {
+    ids.push(node.id);
+    ids.push(...collectAllIds(node.children));
+  }
+  return ids;
+}
+
+function createCollapsedPlaceholder(
+  nodes: StreamWithChildren[],
+  parentId: string | null,
+): StreamWithChildren {
+  const count = countAllNodes(nodes);
+  const originalIds = collectAllIds(nodes);
+  return {
+    id: `collapsed-${originalIds[0] || 'root'}`,
+    project_id: nodes[0]?.project_id ?? '',
+    parent_stream_id: parentId,
+    title: `${count} stream${count !== 1 ? 's' : ''}`,
+    description: null,
+    status: 'backlog',
+    source_type: 'task',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    created_by: '',
+    branched_from_event_id: null,
+    dependencies: [],
+    children: [],
+    _collapsed: { count, originalIds },
+  };
+}
+
+function findAncestorChain(
+  nodes: StreamWithChildren[],
+  targetId: string,
+  path: string[] = [],
+): string[] | null {
+  for (const node of nodes) {
+    if (node.id === targetId) {
+      return [...path, node.id];
+    }
+    const found = findAncestorChain(node.children, targetId, [...path, node.id]);
+    if (found) return found;
+  }
+  return null;
+}
+
+export function buildFocusedTree(
+  tree: StreamWithChildren[],
+  focusedStreamId: string,
+): StreamWithChildren[] {
+  const chain = findAncestorChain(tree, focusedStreamId);
+  if (!chain || chain.length === 0) return tree;
+
+  const ancestorSet = new Set(chain);
+
+  function walkLevel(nodes: StreamWithChildren[], parentId: string | null): StreamWithChildren[] {
+    // Separate nodes into "on-path" and "off-path"
+    const onPath: StreamWithChildren[] = [];
+    const offPath: StreamWithChildren[] = [];
+
+    for (const node of nodes) {
+      if (ancestorSet.has(node.id)) {
+        onPath.push(node);
+      } else {
+        offPath.push(node);
+      }
+    }
+
+    const result: StreamWithChildren[] = [];
+
+    // Add on-path nodes with their children filtered recursively
+    for (const node of onPath) {
+      if (node.id === focusedStreamId) {
+        // Keep the focused stream and all its descendants as-is
+        result.push(node);
+      } else {
+        // This is an ancestor — recurse into its children
+        result.push({
+          ...node,
+          children: walkLevel(node.children, node.id),
+        });
+      }
+    }
+
+    // Collapse off-path nodes into a single placeholder
+    if (offPath.length > 0) {
+      result.push(createCollapsedPlaceholder(offPath, parentId));
+    }
+
+    return result;
+  }
+
+  return walkLevel(tree, null);
+}

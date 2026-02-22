@@ -1,9 +1,10 @@
 import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import * as d3 from 'd3';
-import { ZoomIn, ZoomOut, Move, Hand } from 'lucide-react';
+import { ZoomIn, ZoomOut, Move, Hand, X } from 'lucide-react';
 import type { StreamWithChildren } from '../../types/database';
 import { useVisualization } from '../../hooks/useVisualization';
 import { statusHexColors, sourceTypeHexColors } from '../../lib/utils';
+import { ContextMenu } from './ContextMenu';
 
 // SVG path data for status icons (20x20 viewbox, centered)
 const statusIcons = {
@@ -35,6 +36,9 @@ interface StreamTreeProps {
   onUpdateStreamPosition?: (id: string, x: number, y: number) => Promise<void>;
   onCreateChildSlice?: (parentId: string, position: { x: number; y: number }) => void;
   pendingSlice?: { parentId: string; position: { x: number; y: number } } | null;
+  focusedStreamId?: string | null;
+  onFocusStream?: (id: string) => void;
+  onExitFocus?: () => void;
 }
 
 export interface StreamTreeHandle {
@@ -48,12 +52,37 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
   onUpdateStreamPosition,
   onCreateChildSlice,
   pendingSlice,
+  focusedStreamId,
+  onFocusStream,
+  onExitFocus,
 }, ref) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { layout, zoom, pan, setPan, setZoom } = useVisualization(streamTree);
   const [freePan, setFreePan] = useState(false);
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; streamId: string } | null>(null);
+
+  // Escape key exits focus mode
+  useEffect(() => {
+    if (!focusedStreamId || !onExitFocus) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onExitFocus();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [focusedStreamId, onExitFocus]);
+
+  // Find focused stream title for banner
+  const findStreamTitle = useCallback((nodes: StreamWithChildren[], id: string): string | null => {
+    for (const node of nodes) {
+      if (node.id === id) return node.title;
+      const found = findStreamTitle(node.children, id);
+      if (found) return found;
+    }
+    return null;
+  }, []);
+  const focusedStreamTitle = focusedStreamId ? findStreamTitle(streamTree, focusedStreamId) : null;
 
   useImperativeHandle(ref, () => ({
     resetView: () => {
@@ -189,11 +218,31 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       .attr('class', 'main-group')
       .attr('transform', `translate(${pan.x}, ${pan.y}) scale(${zoom})`);
 
-    // Calculate adjusted positions with offsets
-    const getAdjustedPosition = (nodeId: string, baseX: number, baseY: number) => ({
-      x: baseX + (nodeOffsets[nodeId]?.x || 0),
-      y: baseY + (nodeOffsets[nodeId]?.y || 0),
-    });
+    // In focus mode, compute a straight-line override for Y positions
+    // Main chain sits on one horizontal line; collapsed placeholders offset below
+    const focusYOverrides: Record<string, number> = {};
+    if (focusedStreamId) {
+      const mainY = 100; // consistent Y for the main chain
+      const collapsedOffsetY = 120; // collapsed nodes sit below the main line
+      for (const node of layout.nodes) {
+        if (node.stream._collapsed) {
+          focusYOverrides[node.id] = mainY + collapsedOffsetY;
+        } else {
+          focusYOverrides[node.id] = mainY;
+        }
+      }
+    }
+
+    // Calculate adjusted positions with offsets (ignored in focus mode)
+    const getAdjustedPosition = (nodeId: string, baseX: number, baseY: number) => {
+      if (focusedStreamId && focusYOverrides[nodeId] !== undefined) {
+        return { x: baseX, y: focusYOverrides[nodeId] };
+      }
+      return {
+        x: baseX + (nodeOffsets[nodeId]?.x || 0),
+        y: baseY + (nodeOffsets[nodeId]?.y || 0),
+      };
+    };
 
     // Draw links with adjusted positions
     const linkGenerator = d3
@@ -209,10 +258,18 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       const sourceAdjusted = getAdjustedPosition(link.sourceId, sourceNode.x, sourceNode.y);
       const targetAdjusted = getAdjustedPosition(link.targetId, targetNode.x, targetNode.y);
 
-      // Calculate link anchor points based on adjusted positions
-      const sourceX = sourceAdjusted.x + sourceNode.width;
+      // Calculate link anchor points, adjusting for collapsed nodes
+      const collapsedW = 160;
+      const sourceIsCollapsed = !!sourceNode.stream._collapsed;
+      const targetIsCollapsed = !!targetNode.stream._collapsed;
+
+      const sourceX = sourceIsCollapsed
+        ? sourceAdjusted.x + (sourceNode.width + collapsedW) / 2
+        : sourceAdjusted.x + sourceNode.width;
       const sourceY = sourceAdjusted.y + sourceNode.height / 2;
-      const targetX = targetAdjusted.x;
+      const targetX = targetIsCollapsed
+        ? targetAdjusted.x + (targetNode.width - collapsedW) / 2
+        : targetAdjusted.x;
       const targetY = targetAdjusted.y + targetNode.height / 2;
 
       // Check if link connects focused nodes (part of ancestor chain)
@@ -239,6 +296,49 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
 
       // Fade nodes that are not in the focused ancestor chain
       const isNodeFocused = !selectedStreamId || focusedNodeIds.has(node.id);
+
+      // Collapsed placeholder — render and skip everything else
+      if (node.stream._collapsed) {
+        const collapsedW = 160;
+        const collapsedH = 50;
+        const offsetX = (node.width - collapsedW) / 2;
+        const offsetY = (node.height - collapsedH) / 2;
+
+        const collapsedGroup = g
+          .append('g')
+          .attr('transform', `translate(${adjustedPos.x}, ${adjustedPos.y})`)
+          .attr('data-node-id', node.id)
+          .style('cursor', 'pointer');
+
+        collapsedGroup
+          .append('rect')
+          .attr('x', offsetX)
+          .attr('y', offsetY)
+          .attr('width', collapsedW)
+          .attr('height', collapsedH)
+          .attr('rx', 8)
+          .attr('fill', '#fafaf9')
+          .attr('stroke', '#d6d3d1')
+          .attr('stroke-width', 1.5)
+          .attr('stroke-dasharray', '6,3');
+
+        collapsedGroup
+          .append('text')
+          .attr('x', offsetX + collapsedW / 2)
+          .attr('y', offsetY + collapsedH / 2 + 4)
+          .attr('text-anchor', 'middle')
+          .attr('font-size', '13px')
+          .attr('font-weight', '500')
+          .attr('fill', '#a8a29e')
+          .text(node.stream.title);
+
+        collapsedGroup.on('click', (event: MouseEvent) => {
+          event.stopPropagation();
+          if (onExitFocus) onExitFocus();
+        });
+
+        return; // skip drag, badges, handle, etc.
+      }
 
       const nodeGroup = g
         .append('g')
@@ -361,6 +461,20 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         });
 
       nodeGroup.call(nodeDrag);
+
+      // Context menu (right-click)
+      nodeGroup.on('contextmenu', (event: MouseEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        if (containerRect) {
+          setContextMenu({
+            x: event.clientX - containerRect.left,
+            y: event.clientY - containerRect.top,
+            streamId: node.id,
+          });
+        }
+      });
 
       const statusColor = statusHexColors[node.stream.status];
       const typeColor = sourceTypeHexColors[node.stream.source_type];
@@ -878,7 +992,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       svgEl.removeEventListener('mousemove', handleMouseMove);
       svgEl.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice, pendingSlice, focusedNodeIds, freePan, setZoom, setPan]);
+  }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice, pendingSlice, focusedNodeIds, freePan, setZoom, setPan, onExitFocus, focusedStreamId]);
 
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden bg-stone-50 dark:bg-stone-950">
@@ -888,6 +1002,33 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         height="100%"
         style={{ minHeight: layout.height, minWidth: layout.width, cursor: freePan ? 'move' : undefined }}
       />
+
+      {/* Focus banner */}
+      {focusedStreamId && focusedStreamTitle && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-full shadow-lg px-4 py-1.5 text-sm">
+          <span className="text-stone-500 dark:text-stone-400">Focused on:</span>
+          <span className="font-medium text-stone-900 dark:text-stone-100">{focusedStreamTitle}</span>
+          <button
+            onClick={onExitFocus}
+            className="p-0.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+            title="Exit focus"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Context menu */}
+      {contextMenu && onFocusStream && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          isFocusMode={!!focusedStreamId}
+          onFocus={() => onFocusStream(contextMenu.streamId)}
+          onExitFocus={() => onExitFocus?.()}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
 
       {/* Zoom & pan controls */}
       <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg p-1">

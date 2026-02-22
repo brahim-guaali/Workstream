@@ -63,6 +63,7 @@ export interface StreamWithChildren extends Stream {
   events?: StreamEvent[];
   artifacts?: Artifact[];
   depth?: number;
+  _collapsed?: { count: number; originalIds: string[] };
 }
 
 export interface ProjectWithStreams extends Project {

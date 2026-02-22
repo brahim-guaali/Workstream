@@ -12,7 +12,7 @@ import { AddStreamModal } from '../components/stream/AddStreamModal';
 import { useStreams } from '../hooks/useStreams';
 import { useEvents } from '../hooks/useEvents';
 import { useProject } from '../hooks/useProjects';
-import { statusHexColors, sourceTypeHexColors } from '../lib/utils';
+import { statusHexColors, sourceTypeHexColors, buildFocusedTree } from '../lib/utils';
 import { generateMarkdown, generatePrintHTML } from '../lib/exportDocument';
 import type { ExportData } from '../lib/exportDocument';
 import type { StreamWithChildren, SourceType, StreamStatus, ProjectMetric } from '../types/database';
@@ -48,8 +48,35 @@ export function ProjectPage() {
   const [promptNewTarget, setPromptNewTarget] = useState('');
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
+  const [focusedStreamId, setFocusedStreamId] = useState<string | null>(null);
 
   const { events, loading: eventsLoading, createEvent, deleteEvent } = useEvents(projectId, selectedStream?.id);
+
+  // Compute display tree for focus mode
+  const displayTree = useMemo(
+    () => focusedStreamId ? buildFocusedTree(streamTree, focusedStreamId) : streamTree,
+    [streamTree, focusedStreamId]
+  );
+
+  // Clear focus if focused stream is deleted
+  useEffect(() => {
+    if (!focusedStreamId) return;
+    const exists = streams.some(s => s.id === focusedStreamId);
+    if (!exists) setFocusedStreamId(null);
+  }, [streams, focusedStreamId]);
+
+  // Clear selection if selected stream got collapsed
+  useEffect(() => {
+    if (!selectedStream || !focusedStreamId) return;
+    const isCollapsed = (nodes: StreamWithChildren[]): boolean => {
+      for (const node of nodes) {
+        if (node._collapsed && node._collapsed.originalIds.includes(selectedStream.id)) return true;
+        if (isCollapsed(node.children)) return true;
+      }
+      return false;
+    };
+    if (isCollapsed(displayTree)) setSelectedStream(null);
+  }, [displayTree, selectedStream, focusedStreamId]);
 
   // Close export dropdown on outside click
   useEffect(() => {
@@ -636,12 +663,15 @@ export function ProjectPage() {
             ) : (
               <StreamTree
                 ref={streamTreeRef}
-                streamTree={streamTree}
+                streamTree={displayTree}
                 selectedStreamId={selectedStream?.id || null}
                 onSelectStream={handleSelectStream}
                 onUpdateStreamPosition={handleUpdateStreamPosition}
                 onCreateChildSlice={handleCreateChildSlice}
                 pendingSlice={pendingSlice}
+                focusedStreamId={focusedStreamId}
+                onFocusStream={setFocusedStreamId}
+                onExitFocus={() => setFocusedStreamId(null)}
               />
             )}
           </div>
