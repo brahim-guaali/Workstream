@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Upload, Pencil, X, Check, BarChart3, ChevronDown, FileText, FileDown, FileJson, Share2, Eye } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Pencil, X, Check, BarChart3, ChevronDown, FileText, FileDown, FileJson, Share2, Eye, Loader2 } from 'lucide-react';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -29,7 +29,7 @@ export function ProjectPage() {
   const [isEditingProject, setIsEditingProject] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
-  const { streams, streamTree, loading, createStream, updateStream, deleteStream, exportProject, importProject } = useStreams(projectId, ownerId);
+  const { streams, streamTree, loading, createStream, updateStream, deleteStream, exportProject, importProject, validateImportData } = useStreams(projectId, ownerId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedStream, setSelectedStream] = useState<StreamWithChildren | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -37,6 +37,7 @@ export function ProjectPage() {
   const [newSlicePosition, setNewSlicePosition] = useState<{ x: number; y: number } | null>(null);
   const [pendingSlice, setPendingSlice] = useState<{ parentId: string; position: { x: number; y: number } } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [isAddingMetric, setIsAddingMetric] = useState(false);
   const [newMetricName, setNewMetricName] = useState('');
   const [newMetricValue, setNewMetricValue] = useState('');
@@ -226,20 +227,30 @@ export function ProjectPage() {
 
   const handleExportJSON = async () => {
     setExportDropdownOpen(false);
+    setIsExporting(true);
     try {
-      const data = await exportProject();
+      const projectMeta = project ? {
+        name: project.name,
+        description: project.description ?? null,
+        created_at: project.created_at,
+        updated_at: project.updated_at,
+      } : undefined;
+      const data = await exportProject(projectMeta);
       const exportPayload = { ...data, metrics: project?.metrics ?? [] };
       const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
       downloadBlob(blob, `project-export-${new Date().toISOString().slice(0, 10)}.json`);
     } catch (err) {
       console.error('Export failed:', err);
       alert('Failed to export project');
+    } finally {
+      setIsExporting(false);
     }
   };
 
   const handleExportMarkdown = async () => {
     setExportDropdownOpen(false);
     if (!project) return;
+    setIsExporting(true);
     try {
       const data = await exportProject() as ExportData;
       const md = generateMarkdown(project, data);
@@ -248,12 +259,15 @@ export function ProjectPage() {
     } catch (err) {
       console.error('Export failed:', err);
       alert('Failed to export project');
+    } finally {
+      setIsExporting(false);
     }
   };
 
   const handleExportPDF = async () => {
     setExportDropdownOpen(false);
     if (!project) return;
+    setIsExporting(true);
     try {
       const data = await exportProject() as ExportData;
       const html = generatePrintHTML(project, data);
@@ -268,6 +282,8 @@ export function ProjectPage() {
     } catch (err) {
       console.error('Export failed:', err);
       alert('Failed to export project');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -282,6 +298,11 @@ export function ProjectPage() {
 
       if (!data.version || !data.streams) {
         throw new Error('Invalid project file format');
+      }
+
+      const validation = validateImportData(data);
+      if (!validation.valid) {
+        throw new Error(validation.error);
       }
 
       await importProject(data);
@@ -441,12 +462,16 @@ export function ProjectPage() {
                 </>
               )}
               <div className="relative" ref={exportDropdownRef}>
-                <Button variant="secondary" size="sm" onClick={() => setExportDropdownOpen(!exportDropdownOpen)}>
-                  <Download className="w-4 h-4 mr-1" />
-                  Export
-                  <ChevronDown className="w-3 h-3 ml-1" />
+                <Button variant="secondary" size="sm" onClick={() => !isExporting && setExportDropdownOpen(!exportDropdownOpen)} disabled={isExporting}>
+                  {isExporting ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4 mr-1" />
+                  )}
+                  {isExporting ? 'Exporting...' : 'Export'}
+                  {!isExporting && <ChevronDown className="w-3 h-3 ml-1" />}
                 </Button>
-                {exportDropdownOpen && (
+                {exportDropdownOpen && !isExporting && (
                   <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-50 py-1">
                     <button
                       onClick={handleExportJSON}

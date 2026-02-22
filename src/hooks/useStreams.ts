@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   getDocs,
   Timestamp,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -171,6 +172,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
     status: StreamStatus;
     source_type: SourceType;
     created_at: string;
+    updated_at: string;
     position_x?: number;
     position_y?: number;
     dependencies: string[];
@@ -183,7 +185,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
     children: ExportedStream[];
   };
 
-  const exportProject = useCallback(async () => {
+  const exportProject = useCallback(async (project?: { name: string; description: string | null; created_at: string; updated_at: string }) => {
     if (!user || !projectId || !resolvedOwnerId) throw new Error('Not authenticated');
 
     // Fetch events for all streams
@@ -205,7 +207,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
         stream.id,
         'events'
       );
-      const eventsSnapshot = await getDocs(query(eventsRef, orderBy('createdAt', 'asc')));
+      const eventsSnapshot = await getDocs(query(eventsRef, orderBy('createdAt', 'desc')));
       const events = eventsSnapshot.docs.map((doc) => {
         const data = doc.data();
         return {
@@ -229,6 +231,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
           status: stream.status,
           source_type: stream.source_type,
           created_at: stream.created_at,
+          updated_at: stream.updated_at,
           position_x: stream.position_x,
           position_y: stream.position_y,
           dependencies: stream.dependencies,
@@ -240,6 +243,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
     return {
       version: 2,
       exportedAt: new Date().toISOString(),
+      ...(project ? { project: { name: project.name, description: project.description, created_at: project.created_at, updated_at: project.updated_at } } : {}),
       streams: buildExportTree(null),
     };
   }, [user, projectId, resolvedOwnerId, streams]);
@@ -251,6 +255,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
     status: StreamStatus;
     source_type: SourceType;
     created_at: string;
+    updated_at?: string;
     position_x?: number;
     position_y?: number;
     dependencies?: string[];
@@ -263,6 +268,49 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
     children: ImportedStream[];
   };
 
+  const VALID_STATUSES = ['backlog', 'active', 'blocked', 'done'];
+  const VALID_SOURCE_TYPES = ['task', 'investigation', 'meeting', 'blocker', 'discovery'];
+
+  const validateImportData = (data: unknown): { valid: boolean; error?: string } => {
+    if (!data || typeof data !== 'object') return { valid: false, error: 'Import data must be an object' };
+    const d = data as Record<string, unknown>;
+    if (d.version !== 2) return { valid: false, error: `Unsupported version: ${d.version}. Expected version 2.` };
+    if (!Array.isArray(d.streams) || d.streams.length === 0) return { valid: false, error: 'Import must contain a non-empty streams array' };
+
+    const validateStream = (stream: unknown, path: string): string | null => {
+      if (!stream || typeof stream !== 'object') return `${path}: stream must be an object`;
+      const s = stream as Record<string, unknown>;
+      if (typeof s.title !== 'string' || !s.title.trim()) return `${path}: title must be a non-empty string`;
+      if (!VALID_STATUSES.includes(s.status as string)) return `${path}: invalid status "${s.status}". Must be one of: ${VALID_STATUSES.join(', ')}`;
+      if (!VALID_SOURCE_TYPES.includes(s.source_type as string)) return `${path}: invalid source_type "${s.source_type}". Must be one of: ${VALID_SOURCE_TYPES.join(', ')}`;
+      if (typeof s.created_at !== 'string' || isNaN(Date.parse(s.created_at))) return `${path}: created_at must be a valid date string`;
+
+      if (Array.isArray(s.events)) {
+        for (let i = 0; i < s.events.length; i++) {
+          const ev = s.events[i] as Record<string, unknown>;
+          if (!ev || typeof ev !== 'object') return `${path}.events[${i}]: event must be an object`;
+          if (typeof ev.type !== 'string') return `${path}.events[${i}]: type must be a string`;
+          if (typeof ev.content !== 'string') return `${path}.events[${i}]: content must be a string`;
+          if (typeof ev.created_at !== 'string' || isNaN(Date.parse(ev.created_at))) return `${path}.events[${i}]: created_at must be a valid date string`;
+        }
+      }
+
+      if (Array.isArray(s.children)) {
+        for (let i = 0; i < s.children.length; i++) {
+          const err = validateStream(s.children[i], `${path}.children[${i}]`);
+          if (err) return err;
+        }
+      }
+      return null;
+    };
+
+    for (let i = 0; i < d.streams.length; i++) {
+      const err = validateStream(d.streams[i], `streams[${i}]`);
+      if (err) return { valid: false, error: err };
+    }
+    return { valid: true };
+  };
+
   const importProject = useCallback(
     async (data: {
       version: number;
@@ -270,27 +318,50 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
     }) => {
       if (!user || !projectId || !resolvedOwnerId) throw new Error('Not authenticated');
 
-      // Recursively import streams with their children
-      const importStreamWithChildren = async (
+      // Validate before any writes
+      const validation = validateImportData(data);
+      if (!validation.valid) throw new Error(`Validation failed: ${validation.error}`);
+
+      // Collect all write operations first, then commit in batches
+      const writes: Array<{
+        type: 'stream';
+        ref: ReturnType<typeof doc>;
+        data: Record<string, unknown>;
+      } | {
+        type: 'event';
+        ref: ReturnType<typeof doc>;
+        data: Record<string, unknown>;
+      }> = [];
+
+      const collectWrites = (
         stream: ImportedStream,
         parentStreamId: string | null
       ) => {
         const streamsRef = collection(db, 'users', resolvedOwnerId, 'projects', projectId, 'streams');
-        const docRef = await addDoc(streamsRef, {
-          title: stream.title,
-          description: stream.description,
-          status: stream.status,
-          sourceType: stream.source_type,
-          parentStreamId,
-          branchedFromEventId: null,
-          dependencies: stream.dependencies ?? [],
-          createdAt: Timestamp.fromDate(new Date(stream.created_at)),
-          updatedAt: serverTimestamp(),
-          ...(stream.position_x !== undefined && { positionX: stream.position_x }),
-          ...(stream.position_y !== undefined && { positionY: stream.position_y }),
+        const streamDocRef = doc(streamsRef);
+
+        const updatedAt = stream.updated_at
+          ? Timestamp.fromDate(new Date(stream.updated_at))
+          : Timestamp.fromDate(new Date(stream.created_at));
+
+        writes.push({
+          type: 'stream',
+          ref: streamDocRef,
+          data: {
+            title: stream.title,
+            description: stream.description,
+            status: stream.status,
+            sourceType: stream.source_type,
+            parentStreamId,
+            branchedFromEventId: null,
+            dependencies: stream.dependencies ?? [],
+            createdAt: Timestamp.fromDate(new Date(stream.created_at)),
+            updatedAt,
+            ...(stream.position_x !== undefined && { positionX: stream.position_x }),
+            ...(stream.position_y !== undefined && { positionY: stream.position_y }),
+          },
         });
 
-        // Create events for this stream
         for (const event of stream.events) {
           const eventsRef = collection(
             db,
@@ -299,26 +370,40 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
             'projects',
             projectId,
             'streams',
-            docRef.id,
+            streamDocRef.id,
             'events'
           );
-          await addDoc(eventsRef, {
-            type: event.type,
-            content: event.content,
-            metadata: event.metadata,
-            createdAt: Timestamp.fromDate(new Date(event.created_at)),
+          writes.push({
+            type: 'event',
+            ref: doc(eventsRef),
+            data: {
+              type: event.type,
+              content: event.content,
+              metadata: event.metadata,
+              createdAt: Timestamp.fromDate(new Date(event.created_at)),
+            },
           });
         }
 
-        // Import children with this stream as parent
         for (const child of stream.children) {
-          await importStreamWithChildren(child, docRef.id);
+          collectWrites(child, streamDocRef.id);
         }
       };
 
-      // Import all root streams
+      // Collect all writes from the tree
       for (const stream of data.streams) {
-        await importStreamWithChildren(stream, null);
+        collectWrites(stream, null);
+      }
+
+      // Commit in batches of 500 (Firestore limit)
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < writes.length; i += BATCH_SIZE) {
+        const batch = writeBatch(db);
+        const chunk = writes.slice(i, i + BATCH_SIZE);
+        for (const write of chunk) {
+          batch.set(write.ref, write.data);
+        }
+        await batch.commit();
       }
     },
     [user, projectId, resolvedOwnerId]
@@ -335,5 +420,6 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
     deleteStream,
     exportProject,
     importProject,
+    validateImportData,
   };
 }
