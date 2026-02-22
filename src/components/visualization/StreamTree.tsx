@@ -4,7 +4,6 @@ import { ZoomIn, ZoomOut, Move, Hand, X, Crosshair } from 'lucide-react';
 import type { StreamWithChildren } from '../../types/database';
 import { useVisualization } from '../../hooks/useVisualization';
 import { statusHexColors, sourceTypeHexColors, statusIcons, statusLabels, sourceTypeLabels } from '../../lib/streamConfig';
-import { ContextMenu } from './ContextMenu';
 
 interface StreamTreeProps {
   streamTree: StreamWithChildren[];
@@ -14,7 +13,6 @@ interface StreamTreeProps {
   onCreateChildSlice?: (parentId: string, position: { x: number; y: number }) => void;
   pendingSlice?: { parentId: string; position: { x: number; y: number } } | null;
   focusedStreamId?: string | null;
-  onFocusStream?: (id: string) => void;
   onExitFocus?: () => void;
 }
 
@@ -30,7 +28,6 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
   onCreateChildSlice,
   pendingSlice,
   focusedStreamId,
-  onFocusStream,
   onExitFocus,
 }, ref) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -38,7 +35,6 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
   const { layout, zoom, pan, setPan, setZoom } = useVisualization(streamTree);
   const [freePan, setFreePan] = useState(false);
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; streamId: string } | null>(null);
   const hasInitialFit = useRef(false);
 
   // Escape key exits focus mode
@@ -600,20 +596,6 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
 
       nodeGroup.call(nodeDrag);
 
-      // Context menu (right-click)
-      nodeGroup.on('contextmenu', (event: MouseEvent) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const containerRect = containerRef.current?.getBoundingClientRect();
-        if (containerRect) {
-          setContextMenu({
-            x: event.clientX - containerRect.left,
-            y: event.clientY - containerRect.top,
-            streamId: node.id,
-          });
-        }
-      });
-
       const statusColor = statusHexColors[node.stream.status];
       const typeColor = sourceTypeHexColors[node.stream.source_type];
       const isSelected = selectedStreamId === node.id;
@@ -1167,17 +1149,6 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         </div>
       )}
 
-      {/* Context menu */}
-      {contextMenu && onFocusStream && (
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          isFocusMode={!!focusedStreamId}
-          onFocus={() => onFocusStream(contextMenu.streamId)}
-          onExitFocus={() => onExitFocus?.()}
-          onClose={() => setContextMenu(null)}
-        />
-      )}
 
       {/* Zoom & pan controls */}
       <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg p-1">

@@ -1,5 +1,5 @@
 import { useState, type KeyboardEvent, type ReactNode } from 'react';
-import { X, Plus, Trash2, MessageSquare, GitBranch, Pencil, Check, Tag } from 'lucide-react';
+import { X, Plus, Trash2, MessageSquare, GitBranch, Pencil, Check, Tag, Focus } from 'lucide-react';
 import type { Stream, StreamEvent, StreamStatus, SourceType } from '../../types/database';
 import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Textarea';
@@ -39,6 +39,9 @@ interface StreamDetailProps {
   onAddEvent: (content: string) => Promise<void>;
   onDeleteEvent: (id: string) => Promise<void>;
   onBranch: () => void;
+  isFocused?: boolean;
+  onFocusStream?: () => void;
+  onExitFocus?: () => void;
 }
 
 export function StreamDetail({
@@ -51,6 +54,9 @@ export function StreamDetail({
   onAddEvent,
   onDeleteEvent,
   onBranch,
+  isFocused,
+  onFocusStream,
+  onExitFocus,
 }: StreamDetailProps) {
   const [newNote, setNewNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
@@ -240,12 +246,32 @@ export function StreamDetail({
               </div>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
-          >
-            <X className="w-5 h-5 text-stone-500" />
-          </button>
+          <div className="flex items-center gap-1">
+            {onFocusStream && !isFocused && (
+              <button
+                onClick={onFocusStream}
+                className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                title="Focus on this stream"
+              >
+                <Focus className="w-5 h-5 text-stone-500" />
+              </button>
+            )}
+            {isFocused && onExitFocus && (
+              <button
+                onClick={onExitFocus}
+                className="p-1 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors"
+                title="Exit focus"
+              >
+                <Focus className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+            >
+              <X className="w-5 h-5 text-stone-500" />
+            </button>
+          </div>
         </div>
       </div>
 

@@ -668,7 +668,6 @@ export function ProjectPage() {
                 onCreateChildSlice={handleCreateChildSlice}
                 pendingSlice={pendingSlice}
                 focusedStreamId={focusedStreamId}
-                onFocusStream={setFocusedStreamId}
                 onExitFocus={() => setFocusedStreamId(null)}
               />
             )}
@@ -687,6 +686,9 @@ export function ProjectPage() {
                 onAddEvent={handleAddEvent}
                 onDeleteEvent={deleteEvent}
                 onBranch={handleBranch}
+                isFocused={focusedStreamId === selectedStream.id}
+                onFocusStream={() => setFocusedStreamId(selectedStream.id)}
+                onExitFocus={() => setFocusedStreamId(null)}
               />
             </div>
           )}
