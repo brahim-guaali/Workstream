@@ -1166,7 +1166,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
 
 
       {/* Zoom & pan controls */}
-      <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg p-1">
+      <div className="absolute top-4 right-4 md:top-auto md:bottom-4 flex items-center gap-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg p-1">
         <button
           onClick={() => animateZoomTo(Math.min(3, zoomRef.current + 0.15))}
           className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors"
