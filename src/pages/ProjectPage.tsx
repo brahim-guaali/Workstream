@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Upload, Pencil, X, Check, BarChart3, ChevronDown, FileText, FileDown, FileJson, Share2, Eye, Loader2, Sparkles, RefreshCw, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Pencil, X, Check, BarChart3, ChevronDown, FileText, FileDown, FileJson, Share2, Eye, Loader2, Sparkles, RefreshCw, MoreHorizontal, Search } from 'lucide-react';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -15,7 +15,7 @@ import { useEvents } from '../hooks/useEvents';
 import { useProject } from '../hooks/useProjects';
 import { buildFocusedTree, metricProgress } from '../lib/utils';
 import confetti from 'canvas-confetti';
-import { statusHexColors, sourceTypeHexColors, STATUS_CONFIG, SOURCE_TYPE_CONFIG } from '../lib/streamConfig';
+import { statusHexColors, sourceTypeHexColors, STATUS_CONFIG, SOURCE_TYPE_CONFIG, statusLabels } from '../lib/streamConfig';
 import type { StreamStatus, SourceType } from '../lib/streamConfig';
 import { generateMarkdown, generatePrintHTML } from '../lib/exportDocument';
 import { useProjectInsights } from '../hooks/useProjectInsights';
@@ -63,6 +63,10 @@ export function ProjectPage() {
   const { insights, loading: insightsLoading, error: insightsError, generateInsights, abort: abortInsights } = useProjectInsights();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeStatusFilters, setActiveStatusFilters] = useState<Set<StreamStatus>>(new Set());
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const { events, loading: eventsLoading, createEvent, deleteEvent } = useEvents(projectId, selectedStream?.id, ownerId);
 
@@ -140,6 +144,69 @@ export function ProjectPage() {
 
     return { total: leafNodes.length, byStatus, byType };
   }, [streams]);
+
+  // Search & filter logic
+  const { highlightedStreamIds, searchResults } = useMemo(() => {
+    const hasQuery = searchQuery.trim().length > 0;
+    const hasStatusFilter = activeStatusFilters.size > 0;
+
+    if (!hasQuery && !hasStatusFilter) {
+      return { highlightedStreamIds: null as Set<string> | null, searchResults: [] as StreamWithChildren[] };
+    }
+
+    const query = searchQuery.trim().toLowerCase();
+    const matched: StreamWithChildren[] = [];
+    const matchedIds = new Set<string>();
+
+    // Build a parent lookup from all streams
+    const parentLookup = new Map<string, string | null>();
+    for (const s of streams) {
+      parentLookup.set(s.id, s.parent_stream_id ?? null);
+    }
+
+    // Collect ancestor chain for a given stream id
+    const getAncestors = (id: string): string[] => {
+      const ancestors: string[] = [];
+      let currentId: string | null = parentLookup.get(id) ?? null;
+      while (currentId) {
+        ancestors.push(currentId);
+        currentId = parentLookup.get(currentId) ?? null;
+      }
+      return ancestors;
+    };
+
+    // Check each stream against query and status filters
+    for (const s of streams) {
+      const matchesQuery = !hasQuery || s.title.toLowerCase().includes(query) || (s.description ?? '').toLowerCase().includes(query);
+      const matchesStatus = !hasStatusFilter || activeStatusFilters.has(s.status as StreamStatus);
+      if (matchesQuery && matchesStatus) {
+        matched.push(s as StreamWithChildren);
+        matchedIds.add(s.id);
+      }
+    }
+
+    // Include ancestor chain of each match so the path from root stays visible
+    const highlightedIds = new Set(matchedIds);
+    for (const id of matchedIds) {
+      for (const ancestorId of getAncestors(id)) {
+        highlightedIds.add(ancestorId);
+      }
+    }
+
+    return { highlightedStreamIds: highlightedIds, searchResults: matched.slice(0, 10) };
+  }, [searchQuery, activeStatusFilters, streams]);
+
+  // Close search dropdown on outside click
+  useEffect(() => {
+    if (!isSearchDropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isSearchDropdownOpen]);
 
   const handleSelectStream = useCallback((stream: StreamWithChildren) => {
     setSelectedStream(stream);
@@ -814,7 +881,117 @@ export function ProjectPage() {
         {/* Main content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Visualization */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden relative">
+            {/* Search & filter overlay */}
+            {streams.length > 0 && (
+              <div ref={searchContainerRef} className="absolute top-3 left-3 z-30 max-w-lg" style={{ right: 'auto' }}>
+                <div className="flex flex-col gap-2">
+                  {/* Search input */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setIsSearchDropdownOpen(true);
+                      }}
+                      onFocus={() => setIsSearchDropdownOpen(true)}
+                      placeholder="Search streams..."
+                      className="w-64 pl-9 pr-8 py-2 text-sm bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-stone-900 dark:text-stone-100 placeholder:text-stone-400"
+                    />
+                    {(searchQuery || activeStatusFilters.size > 0) && (
+                      <button
+                        onClick={() => {
+                          setSearchQuery('');
+                          setActiveStatusFilters(new Set());
+                          setIsSearchDropdownOpen(false);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-400 hover:text-stone-600"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Status filter pills */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {(Object.keys(STATUS_CONFIG) as StreamStatus[]).map((status) => {
+                      const isActive = activeStatusFilters.has(status);
+                      return (
+                        <button
+                          key={status}
+                          onClick={() => {
+                            setActiveStatusFilters((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(status)) {
+                                next.delete(status);
+                              } else {
+                                next.add(status);
+                              }
+                              return next;
+                            });
+                            setIsSearchDropdownOpen(true);
+                          }}
+                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-colors shadow-sm ${
+                            isActive
+                              ? 'border-transparent text-white font-medium'
+                              : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-750'
+                          }`}
+                          style={isActive ? { backgroundColor: statusHexColors[status] } : undefined}
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: isActive ? '#ffffff' : statusHexColors[status] }}
+                          />
+                          {statusLabels[status]}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Search results dropdown */}
+                  {isSearchDropdownOpen && (searchQuery.trim() || activeStatusFilters.size > 0) && (
+                    <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                      {searchResults.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-stone-500 dark:text-stone-400">
+                          No matching streams
+                        </div>
+                      ) : (
+                        searchResults.map((stream) => (
+                          <button
+                            key={stream.id}
+                            onClick={() => {
+                              handleSelectStream(stream);
+                              setIsSearchDropdownOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-stone-50 dark:hover:bg-stone-750 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                          >
+                            <span
+                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: statusHexColors[stream.status as StreamStatus] }}
+                            />
+                            <span className="text-sm text-stone-900 dark:text-stone-100 truncate flex-1">
+                              {stream.title}
+                            </span>
+                            <span
+                              className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
+                              style={{
+                                backgroundColor: `${statusHexColors[stream.status as StreamStatus]}20`,
+                                color: statusHexColors[stream.status as StreamStatus],
+                              }}
+                            >
+                              {statusLabels[stream.status as StreamStatus]}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {streams.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center px-4">
                 <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center mb-4">
@@ -845,6 +1022,7 @@ export function ProjectPage() {
                 pendingSlice={pendingSlice}
                 focusedStreamId={focusedStreamId}
                 onExitFocus={() => setFocusedStreamId(null)}
+                highlightedStreamIds={highlightedStreamIds}
               />
             )}
           </div>

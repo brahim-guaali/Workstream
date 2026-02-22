@@ -14,6 +14,7 @@ interface StreamTreeProps {
   pendingSlice?: { parentId: string; position: { x: number; y: number } } | null;
   focusedStreamId?: string | null;
   onExitFocus?: () => void;
+  highlightedStreamIds?: Set<string> | null;
 }
 
 export interface StreamTreeHandle {
@@ -29,6 +30,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
   pendingSlice,
   focusedStreamId,
   onExitFocus,
+  highlightedStreamIds,
 }, ref) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -417,9 +419,10 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       const targetY = targetAdjusted.y + targetNode.height / 2;
 
       // Check if link connects focused nodes (part of ancestor chain)
+      const isLinkHighlighted = !highlightedStreamIds || (highlightedStreamIds.has(link.sourceId) && highlightedStreamIds.has(link.targetId));
       const isLinkInAncestorChain = selectedStreamId &&
         focusedNodeIds.has(link.sourceId) && focusedNodeIds.has(link.targetId);
-      const isLinkFocused = !selectedStreamId || isLinkInAncestorChain;
+      const isLinkFocused = (!selectedStreamId || isLinkInAncestorChain) && isLinkHighlighted;
 
       g.append('path')
         .attr('class', `link link-source-${link.sourceId} link-target-${link.targetId}${!isLinkFocused ? ' link-faded' : ''}${isLinkInAncestorChain ? ' link-stream' : ''}`)
@@ -438,8 +441,9 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
     layout.nodes.forEach((node) => {
       const adjustedPos = getAdjustedPosition(node.id, node.x, node.y);
 
-      // Fade nodes that are not in the focused ancestor chain
-      const isNodeFocused = !selectedStreamId || focusedNodeIds.has(node.id);
+      // Fade nodes that are not in the focused ancestor chain or not highlighted by search
+      const isNodeHighlighted = !highlightedStreamIds || highlightedStreamIds.has(node.id);
+      const isNodeFocused = (!selectedStreamId || focusedNodeIds.has(node.id)) && isNodeHighlighted;
 
       // Collapsed placeholder — render and skip everything else
       if (node.stream._collapsed) {
@@ -1138,7 +1142,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       svgEl.removeEventListener('mousemove', handleMouseMove);
       svgEl.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice, pendingSlice, focusedNodeIds, freePan, setZoom, setPan, onExitFocus, focusedStreamId, handleWheelZoom]);
+  }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice, pendingSlice, focusedNodeIds, freePan, setZoom, setPan, onExitFocus, focusedStreamId, handleWheelZoom, highlightedStreamIds]);
 
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden bg-stone-50 dark:bg-stone-950" style={{ touchAction: 'none' }}>
