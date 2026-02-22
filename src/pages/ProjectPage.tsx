@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Download, Upload, Pencil, X, Check, BarChart3, ChevronDown, FileText, FileDown, FileJson, Share2, Eye, Loader2, Sparkles, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Pencil, X, Check, BarChart3, ChevronDown, FileText, FileDown, FileJson, Share2, Eye, Loader2, Sparkles, RefreshCw, MoreHorizontal } from 'lucide-react';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -61,6 +61,8 @@ export function ProjectPage() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isInsightsOpen, setIsInsightsOpen] = useState(false);
   const { insights, loading: insightsLoading, error: insightsError, generateInsights, abort: abortInsights } = useProjectInsights();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const { events, loading: eventsLoading, createEvent, deleteEvent } = useEvents(projectId, selectedStream?.id, ownerId);
 
@@ -101,6 +103,18 @@ export function ProjectPage() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [exportDropdownOpen]);
+
+  // Close mobile overflow menu on outside click
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [mobileMenuOpen]);
 
   // Compute stream statistics (count leaf nodes - streams with no children)
   const stats = useMemo(() => {
@@ -451,22 +465,27 @@ export function ProjectPage() {
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Hidden file input for import */}
               {!isReadOnly && (
-                <>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".json"
-                    onChange={handleImport}
-                    className="hidden"
-                  />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  onChange={handleImport}
+                  className="hidden"
+                />
+              )}
+
+              {/* Desktop-only: Import, Export, Insights */}
+              {!isReadOnly && (
+                <div className="hidden md:block">
                   <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
                     <Upload className="w-4 h-4 mr-1" />
                     Import
                   </Button>
-                </>
+                </div>
               )}
-              <div className="relative" ref={exportDropdownRef}>
+              <div className="relative hidden md:block" ref={exportDropdownRef}>
                 <Button variant="secondary" size="sm" onClick={() => !isExporting && setExportDropdownOpen(!exportDropdownOpen)} disabled={isExporting}>
                   {isExporting ? (
                     <Loader2 className="w-4 h-4 mr-1 animate-spin" />
@@ -502,30 +521,102 @@ export function ProjectPage() {
                   </div>
                 )}
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setIsInsightsOpen(true);
-                  if (project) {
-                    generateInsights(project, streams, exportProject);
-                  }
-                }}
-                disabled={!project || streams.length === 0}
-              >
-                <Sparkles className="w-4 h-4 mr-1" />
-                Insights
-              </Button>
+              <div className="hidden md:block">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setIsInsightsOpen(true);
+                    if (project) {
+                      generateInsights(project, streams, exportProject);
+                    }
+                  }}
+                  disabled={!project || streams.length === 0}
+                >
+                  <Sparkles className="w-4 h-4 mr-1" />
+                  Insights
+                </Button>
+              </div>
+
+              {/* Mobile-only: overflow menu for Import/Export/Insights */}
+              <div className="relative md:hidden" ref={mobileMenuRef}>
+                <Button variant="secondary" size="sm" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+                {mobileMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg z-50 py-1">
+                    {!isReadOnly && (
+                      <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          fileInputRef.current?.click();
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                      >
+                        <Upload className="w-4 h-4 text-stone-400" />
+                        Import
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleExportJSON();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                    >
+                      <FileJson className="w-4 h-4 text-stone-400" />
+                      Export JSON
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleExportMarkdown();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                    >
+                      <FileText className="w-4 h-4 text-stone-400" />
+                      Export Markdown
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleExportPDF();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
+                    >
+                      <FileDown className="w-4 h-4 text-stone-400" />
+                      Export PDF
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setIsInsightsOpen(true);
+                        if (project) {
+                          generateInsights(project, streams, exportProject);
+                        }
+                      }}
+                      disabled={!project || streams.length === 0}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors disabled:opacity-40"
+                    >
+                      <Sparkles className="w-4 h-4 text-stone-400" />
+                      Insights
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Share — icon-only on mobile */}
               {isOwner && (
                 <Button variant="secondary" size="sm" onClick={() => setIsShareModalOpen(true)}>
-                  <Share2 className="w-4 h-4 mr-1" />
-                  Share
+                  <Share2 className="w-4 h-4 md:mr-1" />
+                  <span className="hidden md:inline">Share</span>
                 </Button>
               )}
+              {/* Add Stream — icon-only on mobile */}
               {!isReadOnly && (
                 <Button onClick={handleOpenAddModal}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Stream
+                  <Plus className="w-4 h-4 md:mr-2" />
+                  <span className="hidden md:inline">Add Stream</span>
                 </Button>
               )}
             </div>
@@ -533,14 +624,14 @@ export function ProjectPage() {
 
           {/* Bottom row: description + stats */}
           {(project?.description || streams.length > 0) && (
-            <div className="px-4 pb-2.5 flex flex-wrap items-start gap-4 text-sm">
+            <div className="px-4 pb-2.5 flex flex-col md:flex-row flex-wrap items-start gap-4 text-sm">
               {project?.description && (
-                <p className="text-stone-500 dark:text-stone-400">
+                <p className="text-stone-500 dark:text-stone-400 line-clamp-2 md:line-clamp-none">
                   {project.description}
                 </p>
               )}
               {streams.length > 0 && (
-                <div className="flex items-center gap-3 ml-auto">
+                <div className="flex items-center gap-3 md:ml-auto flex-wrap">
                   <span className="font-medium text-stone-700 dark:text-stone-300">
                     {stats.total} stream{stats.total !== 1 ? 's' : ''}
                   </span>
@@ -561,7 +652,7 @@ export function ProjectPage() {
                         </span>
                       ))}
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="hidden md:flex items-center gap-1.5">
                     {(Object.entries(stats.byType) as [SourceType, number][])
                       .filter(([, count]) => count > 0)
                       .map(([type, count]) => (
@@ -579,8 +670,8 @@ export function ProjectPage() {
             </div>
           )}
 
-          {/* Metrics row */}
-          <div className="px-4 pb-2.5 flex flex-wrap items-center gap-2 text-sm">
+          {/* Metrics row — hidden on mobile, accessible via Edit Project modal */}
+          <div className="px-4 pb-2.5 hidden md:flex flex-wrap items-center gap-2 text-sm">
             {(project?.metrics ?? []).map((m) =>
               editingMetricId === m.id && !isReadOnly ? (
                 <div key={m.id} className="flex items-center gap-1.5">
@@ -758,9 +849,9 @@ export function ProjectPage() {
             )}
           </div>
 
-          {/* Detail sidebar */}
+          {/* Detail sidebar — desktop */}
           {selectedStream && (
-            <div className="w-96 flex-shrink-0">
+            <div className="hidden md:block w-96 flex-shrink-0">
               <StreamDetail
                 stream={selectedStream}
                 events={events}
@@ -776,6 +867,35 @@ export function ProjectPage() {
                 onExitFocus={() => setFocusedStreamId(null)}
                 isReadOnly={isReadOnly}
               />
+            </div>
+          )}
+
+          {/* Detail sidebar — mobile overlay */}
+          {selectedStream && (
+            <div className="fixed inset-0 z-50 md:hidden">
+              {/* Backdrop */}
+              <div
+                className="absolute inset-0 bg-black/40"
+                onClick={handleCloseDetail}
+              />
+              {/* Panel */}
+              <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-white dark:bg-stone-900 shadow-xl overflow-auto">
+                <StreamDetail
+                  stream={selectedStream}
+                  events={events}
+                  eventsLoading={eventsLoading}
+                  onClose={handleCloseDetail}
+                  onUpdateStream={handleUpdateStream}
+                  onDeleteStream={handleDeleteStream}
+                  onAddEvent={handleAddEvent}
+                  onDeleteEvent={deleteEvent}
+                  onBranch={handleBranch}
+                  isFocused={focusedStreamId === selectedStream.id}
+                  onFocusStream={() => setFocusedStreamId(selectedStream.id)}
+                  onExitFocus={() => setFocusedStreamId(null)}
+                  isReadOnly={isReadOnly}
+                />
+              </div>
             </div>
           )}
         </div>
