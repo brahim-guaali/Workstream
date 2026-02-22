@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import * as d3 from 'd3';
-import { ZoomIn, ZoomOut, Move, Hand, X, Crosshair, Lock, Unlock } from 'lucide-react';
+import { ZoomIn, ZoomOut, X, Crosshair, Lock, Unlock } from 'lucide-react';
 import type { StreamWithChildren } from '../../types/database';
 import { useVisualization } from '../../hooks/useVisualization';
 import { statusHexColors, sourceTypeHexColors, statusIcons, statusLabels, sourceTypeLabels } from '../../lib/streamConfig';
@@ -1185,20 +1185,6 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           <ZoomOut className="w-4 h-4" />
         </button>
         <div className="w-px h-5 bg-stone-200 dark:bg-stone-700 mx-0.5" />
-        <button
-          onClick={() => {
-            setFreePan((v) => !v);
-            lastMousePos.current = null;
-          }}
-          className={`p-2 rounded-lg transition-colors ${
-            freePan
-              ? 'bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400'
-              : 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300'
-          }`}
-          title={freePan ? 'Switch to drag mode' : 'Switch to free pan mode'}
-        >
-          {freePan ? <Move className="w-4 h-4" /> : <Hand className="w-4 h-4" />}
-        </button>
         <button
           onClick={() => setDragLocked((v) => {
             const next = !v;
