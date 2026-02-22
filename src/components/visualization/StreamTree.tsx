@@ -158,16 +158,20 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
     animateViewTo(panRef.current.x, panRef.current.y, target, duration);
   }, [animateViewTo]);
 
-  // Wheel zoom: accumulate a target and animate to it
+  // Wheel zoom: accumulate a target and animate toward cursor position
   const wheelZoomTarget = useRef(zoom);
   wheelZoomTarget.current = zoom; // stay in sync when not wheeling
   const wheelAnimRef = useRef<number>(0);
-  const handleWheelZoom = useCallback((deltaY: number) => {
+  const handleWheelZoom = useCallback((deltaY: number, cursorX: number, cursorY: number) => {
     const delta = -deltaY * 0.001;
     wheelZoomTarget.current = Math.min(3, Math.max(0.2, wheelZoomTarget.current + delta));
     cancelAnimationFrame(wheelAnimRef.current);
     const startZoom = zoomRef.current;
+    const startPan = { ...panRef.current };
     const endZoom = wheelZoomTarget.current;
+    // Compute target pan so the world point under the cursor stays fixed
+    const endPanX = cursorX - (cursorX - startPan.x) * (endZoom / startZoom);
+    const endPanY = cursorY - (cursorY - startPan.y) * (endZoom / startZoom);
     const duration = 150;
     const startTime = performance.now();
 
@@ -175,22 +179,29 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       const t = Math.min((now - startTime) / duration, 1);
       const ease = 1 - Math.pow(1 - t, 3);
       setZoom(startZoom + (endZoom - startZoom) * ease);
+      setPan({
+        x: startPan.x + (endPanX - startPan.x) * ease,
+        y: startPan.y + (endPanY - startPan.y) * ease,
+      });
       if (t < 1) {
         wheelAnimRef.current = requestAnimationFrame(step);
       }
     };
     wheelAnimRef.current = requestAnimationFrame(step);
-  }, [setZoom]);
+  }, [setZoom, setPan]);
 
   // Fit all nodes in the viewport
   const fitAll = useCallback(() => {
     if (!containerRef.current || layout.nodes.length === 0) return;
 
-    const offsets = nodeOffsetsRef.current;
+    // Merge saved initial offsets with any live drag offsets so the bounding
+    // box is correct even when called before the offset state has been flushed.
+    const savedOffsets = getInitialOffsets();
+    const liveOffsets = nodeOffsetsRef.current;
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
     for (const node of layout.nodes) {
-      const off = offsets[node.id] || { x: 0, y: 0 };
+      const off = liveOffsets[node.id] || savedOffsets[node.id] || { x: 0, y: 0 };
       const nx = node.x + off.x;
       const ny = node.y + off.y;
       minX = Math.min(minX, nx);
@@ -206,12 +217,13 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
     const availW = rect.width - padding * 2;
     const availH = rect.height - padding * 2;
 
-    const newZoom = Math.min(Math.max(availW / contentW, 0.2), Math.min(availH / contentH, 3));
-    const newPanX = (rect.width - contentW * newZoom) / 2 - minX * newZoom;
-    const newPanY = (rect.height - contentH * newZoom) / 2 - minY * newZoom;
+    const newZoom = Math.min(Math.min(availW / contentW, availH / contentH), 3);
+    const clampedZoom = Math.max(newZoom, 0.2);
+    const newPanX = (rect.width - contentW * clampedZoom) / 2 - minX * clampedZoom;
+    const newPanY = (rect.height - contentH * clampedZoom) / 2 - minY * clampedZoom;
 
-    animateViewTo(newPanX, newPanY, newZoom);
-  }, [layout.nodes, animateViewTo]);
+    animateViewTo(newPanX, newPanY, clampedZoom);
+  }, [layout.nodes, getInitialOffsets, animateViewTo]);
 
   useImperativeHandle(ref, () => ({
     resetView: () => fitAll(),
@@ -1027,11 +1039,12 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
-        // Pinch-to-zoom or Ctrl+scroll → zoom
+        // Pinch-to-zoom or Ctrl+scroll → zoom toward cursor
         // Trackpad pinch sends small deltaY (~1-10); mouse wheel sends large (~100+)
         // Boost small deltas so trackpad pinch feels responsive
-        const boosted = Math.abs(e.deltaY) < 20 ? e.deltaY * 8 : e.deltaY;
-        handleWheelZoom(boosted);
+        const boosted = Math.abs(e.deltaY) < 20 ? -e.deltaY * 8 : e.deltaY;
+        const rect = container.getBoundingClientRect();
+        handleWheelZoom(boosted, e.clientX - rect.left, e.clientY - rect.top);
       } else {
         // Two-finger scroll → pan
         setPan((prev) => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
