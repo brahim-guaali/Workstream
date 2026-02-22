@@ -804,27 +804,27 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         wrapText(nodeGroup, node.stream.description, 16, 48, node.width - 32, '11px', '400', '#78716c', 2);
       }
 
-      // Children count
-      if (node.stream.children.length > 0) {
-        nodeGroup
-          .append('text')
-          .attr('x', 16)
-          .attr('y', node.height - 12)
-          .attr('font-size', '10px')
-          .attr('fill', '#a8a29e')
-          .text(`${node.stream.children.length} branch${node.stream.children.length > 1 ? 'es' : ''}`);
-      }
-
-      // Dependency tags (bottom-left, compact pills)
+      // Dependency tags (bottom-left, compact pills — stop before the type badge)
       const deps = node.stream.dependencies || [];
       if (deps.length > 0) {
-        const maxVisible = 3;
-        const visibleDeps = deps.slice(0, maxVisible);
-        const overflow = deps.length - maxVisible;
-        let depX = node.stream.children.length > 0 ? 16 + (`${node.stream.children.length} branch${node.stream.children.length > 1 ? 'es' : ''}`.length * 6) + 12 : 16;
+        // Generate a stable hue from a string so each dependency name gets a unique color
+        const depHue = (s: string) => {
+          let h = 0;
+          for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) & 0xffffffff;
+          return Math.abs(h) % 360;
+        };
+        const maxDepX = node.width - typeBadgeWidth - 20; // leave gap before type badge
+        let depX = 16;
+        let rendered = 0;
 
-        visibleDeps.forEach((dep) => {
+        for (const dep of deps) {
           const pillWidth = dep.length * 6 + 12;
+          if (depX + pillWidth > maxDepX) break;
+
+          const hue = depHue(dep);
+          const bgColor = `hsl(${hue}, 70%, 92%)`;
+          const fgColor = `hsl(${hue}, 60%, 35%)`;
+
           const pillGroup = nodeGroup
             .append('g')
             .attr('transform', `translate(${depX}, ${node.height - 26})`);
@@ -834,8 +834,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
             .attr('width', pillWidth)
             .attr('height', 16)
             .attr('rx', 8)
-            .attr('fill', '#8b5cf6')
-            .attr('opacity', 0.15);
+            .attr('fill', bgColor);
 
           pillGroup
             .append('text')
@@ -844,36 +843,39 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
             .attr('text-anchor', 'middle')
             .attr('font-size', '9px')
             .attr('font-weight', '500')
-            .attr('fill', '#7c3aed')
+            .attr('fill', fgColor)
             .text(dep);
 
           depX += pillWidth + 4;
-        });
+          rendered++;
+        }
 
+        const overflow = deps.length - rendered;
         if (overflow > 0) {
           const overflowText = `+${overflow}`;
           const overflowWidth = overflowText.length * 6 + 10;
-          const overflowGroup = nodeGroup
-            .append('g')
-            .attr('transform', `translate(${depX}, ${node.height - 26})`);
+          if (depX + overflowWidth <= maxDepX) {
+            const overflowGroup = nodeGroup
+              .append('g')
+              .attr('transform', `translate(${depX}, ${node.height - 26})`);
 
-          overflowGroup
-            .append('rect')
-            .attr('width', overflowWidth)
-            .attr('height', 16)
-            .attr('rx', 8)
-            .attr('fill', '#8b5cf6')
-            .attr('opacity', 0.1);
+            overflowGroup
+              .append('rect')
+              .attr('width', overflowWidth)
+              .attr('height', 16)
+              .attr('rx', 8)
+              .attr('fill', '#e7e5e4');
 
-          overflowGroup
-            .append('text')
-            .attr('x', overflowWidth / 2)
-            .attr('y', 11.5)
-            .attr('text-anchor', 'middle')
-            .attr('font-size', '9px')
-            .attr('font-weight', '500')
-            .attr('fill', '#a78bfa')
-            .text(overflowText);
+            overflowGroup
+              .append('text')
+              .attr('x', overflowWidth / 2)
+              .attr('y', 11.5)
+              .attr('text-anchor', 'middle')
+              .attr('font-size', '9px')
+              .attr('font-weight', '500')
+              .attr('fill', '#78716c')
+              .text(overflowText);
+          }
         }
       }
 

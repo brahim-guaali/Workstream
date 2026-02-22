@@ -375,12 +375,12 @@ export function StreamDetail({
             {stream.dependencies.map((dep) => (
               <span
                 key={dep}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-200"
               >
                 {dep}
                 <button
                   onClick={() => handleRemoveDependency(dep)}
-                  className="ml-0.5 hover:text-violet-900 dark:hover:text-violet-100"
+                  className="ml-0.5 hover:text-stone-900 dark:hover:text-white"
                 >
                   <X className="w-3 h-3" />
                 </button>
