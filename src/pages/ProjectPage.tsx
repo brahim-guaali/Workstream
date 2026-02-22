@@ -13,6 +13,7 @@ import { useStreams } from '../hooks/useStreams';
 import { useEvents } from '../hooks/useEvents';
 import { useProject } from '../hooks/useProjects';
 import { buildFocusedTree } from '../lib/utils';
+import confetti from 'canvas-confetti';
 import { statusHexColors, sourceTypeHexColors, STATUS_CONFIG, SOURCE_TYPE_CONFIG } from '../lib/streamConfig';
 import type { StreamStatus, SourceType } from '../lib/streamConfig';
 import { generateMarkdown, generatePrintHTML } from '../lib/exportDocument';
@@ -161,6 +162,7 @@ export function ProjectPage() {
 
     // When a stream is marked done, prompt user to update metrics
     if (updates.status === 'done' && selectedStream.status !== 'done') {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       setMetricsPromptStreamName(selectedStream.title);
       setPromptMetrics((project?.metrics ?? []).map((m) => ({ ...m })));
       setMetricsPromptOpen(true);
