@@ -234,7 +234,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
     requestAnimationFrame(() => fitAll());
   }, [layout.nodes, fitAll]);
 
-  // Auto-pan to keep the selected node visible when a NEW stream is selected.
+  // Auto-pan to keep the selected node fully visible when a NEW stream is selected.
   // Once auto-panned, manual user pan/zoom is not overridden.
   useEffect(() => {
     if (!selectedStreamId || !containerRef.current) return;
@@ -245,13 +245,15 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
     const node = layout.nodes.find((n) => n.id === selectedStreamId);
     if (!node) return;
 
-    // Wait one frame so the sidebar has rendered and the container has its new size
-    const rafId = requestAnimationFrame(() => {
+    // Wait two frames: first for React render (sidebar appears), second for browser layout
+    const rafId = requestAnimationFrame(() => requestAnimationFrame(() => {
       if (!containerRef.current) return;
 
       const curPan = panRef.current;
       const curZoom = zoomRef.current;
-      const offset = nodeOffsetsRef.current[selectedStreamId] || { x: 0, y: 0 };
+      const savedOffsets = getInitialOffsets();
+      const liveOffsets = nodeOffsetsRef.current;
+      const offset = liveOffsets[selectedStreamId] || savedOffsets[selectedStreamId] || { x: 0, y: 0 };
 
       const nodeX = node.x + offset.x;
       const nodeY = node.y + offset.y;
@@ -267,25 +269,23 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       const viewH = rect.height;
       const margin = 40;
 
-      const isVisible =
-        screenLeft >= margin &&
-        screenRight <= viewW - margin &&
-        screenTop >= margin &&
-        screenBottom <= viewH - margin;
+      // Compute minimal pan adjustment to bring the node fully into view
+      let dx = 0;
+      let dy = 0;
+      if (screenLeft < margin) dx = margin - screenLeft;
+      else if (screenRight > viewW - margin) dx = (viewW - margin) - screenRight;
+      if (screenTop < margin) dy = margin - screenTop;
+      else if (screenBottom > viewH - margin) dy = (viewH - margin) - screenBottom;
 
-      if (!isVisible) {
-        animateViewTo(
-          viewW / 2 - (nodeX + node.width / 2) * curZoom,
-          viewH / 2 - (nodeY + node.height / 2) * curZoom,
-        );
+      if (dx !== 0 || dy !== 0) {
+        animateViewTo(curPan.x + dx, curPan.y + dy);
       }
-    });
+    }));
 
     return () => {
       cancelAnimationFrame(rafId);
-      cancelAnimationFrame(animRef.current);
     };
-  }, [selectedStreamId, layout.nodes, animateViewTo]);
+  }, [selectedStreamId, layout.nodes, getInitialOffsets, animateViewTo]);
 
   // Compute ancestor IDs for the selected stream
   const getAncestorIds = useCallback((streamId: string | null): Set<string> => {
