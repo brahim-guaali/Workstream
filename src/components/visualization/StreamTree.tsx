@@ -39,6 +39,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
   const [freePan, setFreePan] = useState(false);
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; streamId: string } | null>(null);
+  const hasInitialFit = useRef(false);
 
   // Escape key exits focus mode
   useEffect(() => {
@@ -215,6 +216,14 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
   useImperativeHandle(ref, () => ({
     resetView: () => fitAll(),
   }), [fitAll]);
+
+  // Fit all nodes into view on initial load
+  useEffect(() => {
+    if (hasInitialFit.current || layout.nodes.length === 0 || !containerRef.current) return;
+    hasInitialFit.current = true;
+    // Wait one frame so the container has its final size
+    requestAnimationFrame(() => fitAll());
+  }, [layout.nodes, fitAll]);
 
   // Auto-pan to keep the selected node visible when the sidebar opens
   useEffect(() => {
@@ -1011,13 +1020,24 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       .on('drag', handleCanvasDrag);
     svg.call(canvasDrag);
 
-    // Scroll-wheel zoom (smooth)
+    // Wheel / trackpad: pinch-to-zoom (ctrlKey) zooms, two-finger scroll pans
+    // Listen on container (not SVG) so events are caught even if SVG layout is odd
     const svgEl = svgRef.current;
+    const container = containerRef.current!;
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      handleWheelZoom(e.deltaY);
+      if (e.ctrlKey || e.metaKey) {
+        // Pinch-to-zoom or Ctrl+scroll → zoom
+        // Trackpad pinch sends small deltaY (~1-10); mouse wheel sends large (~100+)
+        // Boost small deltas so trackpad pinch feels responsive
+        const boosted = Math.abs(e.deltaY) < 20 ? e.deltaY * 8 : e.deltaY;
+        handleWheelZoom(boosted);
+      } else {
+        // Two-finger scroll → pan
+        setPan((prev) => ({ x: prev.x - e.deltaX, y: prev.y - e.deltaY }));
+      }
     };
-    svgEl.addEventListener('wheel', handleWheel, { passive: false });
+    container.addEventListener('wheel', handleWheel, { passive: false });
 
     // Any click disables free pan
     const handleClick = () => {
@@ -1103,7 +1123,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
     }
 
     return () => {
-      svgEl.removeEventListener('wheel', handleWheel);
+      container.removeEventListener('wheel', handleWheel);
       svgEl.removeEventListener('mousedown', handleClick);
       svgEl.removeEventListener('mousemove', handleMouseMove);
       svgEl.removeEventListener('mouseleave', handleMouseLeave);
@@ -1111,12 +1131,12 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
   }, [layout, zoom, pan, selectedStreamId, onSelectStream, handleCanvasDrag, nodeOffsets, onUpdateStreamPosition, onCreateChildSlice, pendingSlice, focusedNodeIds, freePan, setZoom, setPan, onExitFocus, focusedStreamId, handleWheelZoom]);
 
   return (
-    <div ref={containerRef} className="relative w-full h-full overflow-hidden bg-stone-50 dark:bg-stone-950">
+    <div ref={containerRef} className="relative w-full h-full overflow-hidden bg-stone-50 dark:bg-stone-950" style={{ touchAction: 'none' }}>
       <svg
         ref={svgRef}
         width="100%"
         height="100%"
-        style={{ minHeight: layout.height, minWidth: layout.width, cursor: freePan ? 'move' : undefined }}
+        style={{ cursor: freePan ? 'move' : undefined }}
       />
 
       {/* Focus banner */}
