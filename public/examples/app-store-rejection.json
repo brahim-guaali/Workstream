@@ -1,0 +1,338 @@
+{
+  "version": 2,
+  "exportedAt": "2024-01-15T10:00:00.000Z",
+  "metrics": [
+    {
+      "id": "rejections",
+      "name": "Rejection Count",
+      "value": 7,
+      "initialValue": 1,
+      "target": 0
+    },
+    {
+      "id": "days-waiting",
+      "name": "Days in Review",
+      "value": 47,
+      "initialValue": 0,
+      "target": 3
+    },
+    {
+      "id": "team-morale",
+      "name": "Team Morale",
+      "value": 12,
+      "initialValue": 100,
+      "target": 100
+    },
+    {
+      "id": "revenue-lost",
+      "name": "Revenue Lost ($K)",
+      "value": 89,
+      "initialValue": 0,
+      "target": 0
+    }
+  ],
+  "streams": [
+    {
+      "id": "root",
+      "title": "App rejected by Apple (7th time)",
+      "description": "Rejection reason: 'Guideline 4.2 - Design - Minimum Functionality'. We have 47 features.",
+      "status": "blocked",
+      "source_type": "blocker",
+      "created_at": "2024-01-12T09:00:00.000Z",
+      "dependencies": [],
+      "events": [
+        {
+          "type": "note",
+          "content": "Review time: 14 days. Rejection explanation: 2 sentences. Will to live: diminishing.",
+          "metadata": null,
+          "created_at": "2024-01-12T09:05:00.000Z"
+        },
+        {
+          "type": "note",
+          "content": "Called Apple Developer Support. They said 'we cannot discuss specific review decisions'. Very helpful.",
+          "metadata": null,
+          "created_at": "2024-01-12T14:00:00.000Z"
+        }
+      ],
+      "children": [
+        {
+          "id": "decode",
+          "title": "Decode the rejection reason",
+          "description": "Hire a cryptographer if needed",
+          "status": "done",
+          "source_type": "investigation",
+          "created_at": "2024-01-12T10:00:00.000Z",
+          "dependencies": [],
+          "events": [
+            {
+              "type": "note",
+              "content": "Team spent 3 hours analyzing 'Your app does not provide enough functionality'. We have login, profiles, payments, chat, and AR filters.",
+              "metadata": null,
+              "created_at": "2024-01-12T13:00:00.000Z"
+            }
+          ],
+          "children": [
+            {
+              "id": "research-rejections",
+              "title": "Research similar rejections online",
+              "description": "Surely someone else has solved this",
+              "status": "done",
+              "source_type": "investigation",
+              "created_at": "2024-01-12T13:30:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Found a blog post from 2019: 'Apple sometimes rejects apps for having TOO MANY features'. I need a drink.",
+                  "metadata": null,
+                  "created_at": "2024-01-12T14:00:00.000Z"
+                },
+                {
+                  "type": "note",
+                  "content": "Found Reddit thread: 'Got rejected 12 times, approved on 13th with zero changes'. This is not science.",
+                  "metadata": null,
+                  "created_at": "2024-01-12T14:30:00.000Z"
+                }
+              ],
+              "children": [
+                {
+                  "id": "twitter-rant",
+                  "title": "Draft Twitter rant (did not post)",
+                  "description": "Therapeutic writing exercise",
+                  "status": "done",
+                  "source_type": "task",
+                  "created_at": "2024-01-12T15:00:00.000Z",
+                  "dependencies": [],
+                  "events": [
+                    {
+                      "type": "note",
+                      "content": "Wrote 47 tweets about App Store review process. Marketing said 'please do not post these'. Saved as draft.",
+                      "metadata": null,
+                      "created_at": "2024-01-12T15:30:00.000Z"
+                    }
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "competitor-analysis",
+              "title": "Analyze competitor apps",
+              "description": "How did THEY get approved?",
+              "status": "done",
+              "source_type": "investigation",
+              "created_at": "2024-01-12T16:00:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Competitor app has 3 features. THREE. And it's approved. One of them is just 'Settings'.",
+                  "metadata": null,
+                  "created_at": "2024-01-12T17:00:00.000Z"
+                }
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "changes",
+          "title": "Make random changes and pray",
+          "description": "The official Apple appeal strategy",
+          "status": "active",
+          "source_type": "task",
+          "created_at": "2024-01-13T09:00:00.000Z",
+          "dependencies": [],
+          "events": [],
+          "children": [
+            {
+              "id": "icon",
+              "title": "Change app icon slightly",
+              "description": "Move gradient 2 pixels. This definitely matters.",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-01-13T10:00:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Designer asked why. I said 'Apple'. They understood immediately.",
+                  "metadata": null,
+                  "created_at": "2024-01-13T11:00:00.000Z"
+                }
+              ],
+              "children": [
+                {
+                  "id": "icon-variations",
+                  "title": "Generate 47 icon variations",
+                  "description": "One of them HAS to work",
+                  "status": "done",
+                  "source_type": "task",
+                  "created_at": "2024-01-13T11:30:00.000Z",
+                  "dependencies": [],
+                  "events": [
+                    {
+                      "type": "note",
+                      "content": "Designer now refuses to make eye contact with me in meetings",
+                      "metadata": null,
+                      "created_at": "2024-01-13T16:00:00.000Z"
+                    }
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "video",
+              "title": "Record demo video nobody will watch",
+              "description": "Show every feature in excruciating detail",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-01-13T14:00:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "12-minute video uploaded. Response from reviewer: 'Thanks for the additional context' (still rejected)",
+                  "metadata": null,
+                  "created_at": "2024-01-15T09:00:00.000Z"
+                }
+              ],
+              "children": [
+                {
+                  "id": "video-v2",
+                  "title": "Record ANOTHER demo video",
+                  "description": "This time with more enthusiasm",
+                  "status": "active",
+                  "source_type": "task",
+                  "created_at": "2024-01-15T10:00:00.000Z",
+                  "dependencies": [],
+                  "events": [
+                    {
+                      "type": "note",
+                      "content": "Added upbeat music and 'Wow!' sound effects. Professional.",
+                      "metadata": null,
+                      "created_at": "2024-01-15T12:00:00.000Z"
+                    }
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "rewrite",
+              "title": "Rewrite app description with buzzwords",
+              "description": "Add AI, blockchain, and 'delightful user experience'",
+              "status": "active",
+              "source_type": "task",
+              "created_at": "2024-01-15T13:00:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "New description: 'AI-powered delightful experience leveraging cutting-edge blockchain for seamless synergy'. We don't use AI or blockchain.",
+                  "metadata": null,
+                  "created_at": "2024-01-15T14:00:00.000Z"
+                }
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "appeal",
+          "title": "File formal appeal",
+          "description": "Surely the appeals board is different",
+          "status": "blocked",
+          "source_type": "task",
+          "created_at": "2024-01-16T09:00:00.000Z",
+          "dependencies": [],
+          "events": [
+            {
+              "type": "note",
+              "content": "Appeal response: 'After further review, we have determined that your app still does not comply with Guideline 4.2'. Copy-pasted rejection.",
+              "metadata": null,
+              "created_at": "2024-01-20T09:00:00.000Z"
+            }
+          ],
+          "children": [
+            {
+              "id": "escalate",
+              "title": "Try to find Tim Cook's email",
+              "description": "Desperate times",
+              "status": "backlog",
+              "source_type": "task",
+              "created_at": "2024-01-20T10:00:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Found tcook@apple.com. Legal said 'do NOT email Tim Cook'. Fine.",
+                  "metadata": null,
+                  "created_at": "2024-01-20T11:00:00.000Z"
+                }
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "android",
+          "title": "Consider Android-only launch",
+          "description": "At least Google just lets you ship",
+          "status": "active",
+          "source_type": "discovery",
+          "created_at": "2024-01-15T11:00:00.000Z",
+          "dependencies": [],
+          "events": [
+            {
+              "type": "note",
+              "content": "CEO: 'Our users are 80% iOS.' Me: 'Our users are 0% because we can't ship.'",
+              "metadata": null,
+              "created_at": "2024-01-15T11:30:00.000Z"
+            }
+          ],
+          "children": [
+            {
+              "id": "android-build",
+              "title": "Prepare Android build",
+              "description": "Dust off the Android Studio project",
+              "status": "active",
+              "source_type": "task",
+              "created_at": "2024-01-21T09:00:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Android Studio needs 47 updates. Gradle sync failed. Classic.",
+                  "metadata": null,
+                  "created_at": "2024-01-21T10:00:00.000Z"
+                }
+              ],
+              "children": [
+                {
+                  "id": "gradle-fix",
+                  "title": "Fix Gradle sync errors",
+                  "description": "Google's revenge for considering Android",
+                  "status": "active",
+                  "source_type": "blocker",
+                  "created_at": "2024-01-21T11:00:00.000Z",
+                  "dependencies": [],
+                  "events": [
+                    {
+                      "type": "note",
+                      "content": "Error: 'Could not resolve com.google.android.something:something:1.2.3'. StackOverflow says 'just clean and rebuild'. Did not work.",
+                      "metadata": null,
+                      "created_at": "2024-01-21T12:00:00.000Z"
+                    }
+                  ],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

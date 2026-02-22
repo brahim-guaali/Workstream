@@ -1,0 +1,362 @@
+{
+  "version": 2,
+  "exportedAt": "2024-01-15T10:00:00.000Z",
+  "metrics": [
+    {
+      "id": "devices-tested",
+      "name": "Devices Tested",
+      "value": 4,
+      "initialValue": 0,
+      "target": 847
+    },
+    {
+      "id": "crash-rate",
+      "name": "Crash Rate %",
+      "value": 0.3,
+      "initialValue": 12.7,
+      "target": 0.1
+    },
+    {
+      "id": "stackoverflow-tabs",
+      "name": "StackOverflow Tabs Open",
+      "value": 23,
+      "initialValue": 0,
+      "target": 0
+    },
+    {
+      "id": "coffees",
+      "name": "Coffees Consumed",
+      "value": 47,
+      "initialValue": 2,
+      "target": 3
+    }
+  ],
+  "streams": [
+    {
+      "id": "root",
+      "title": "App crashes only on Samsung Galaxy S7 Edge",
+      "description": "QA found it. We have 3 S7 Edge users. They are VERY vocal on social media.",
+      "status": "active",
+      "source_type": "investigation",
+      "created_at": "2024-02-06T09:00:00.000Z",
+      "dependencies": [],
+      "events": [
+        {
+          "type": "note",
+          "content": "Cannot reproduce on emulator. Cannot reproduce on any other device. The S7 Edge is gaslighting us.",
+          "metadata": null,
+          "created_at": "2024-02-06T10:00:00.000Z"
+        },
+        {
+          "type": "note",
+          "content": "One of the 3 users is a tech blogger with 50K followers. Of course.",
+          "metadata": null,
+          "created_at": "2024-02-06T11:00:00.000Z"
+        }
+      ],
+      "children": [
+        {
+          "id": "acquire-device",
+          "title": "Acquire an S7 Edge somehow",
+          "description": "Nobody on the team owns one. It's 2024.",
+          "status": "done",
+          "source_type": "task",
+          "created_at": "2024-02-06T14:00:00.000Z",
+          "dependencies": [],
+          "events": [
+            {
+              "type": "note",
+              "content": "Company credit card declined for 'vintage electronics'. Had to expense as 'testing equipment'.",
+              "metadata": null,
+              "created_at": "2024-02-06T15:00:00.000Z"
+            }
+          ],
+          "children": [
+            {
+              "id": "ebay",
+              "title": "Buy used S7 Edge on eBay",
+              "description": "Found one for $47. Suspiciously cheap.",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-02-06T16:00:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "It arrived with a cracked screen, runs Android 8, and has 'KAREN' as the lock screen name. Perfect test device.",
+                  "metadata": null,
+                  "created_at": "2024-02-08T11:00:00.000Z"
+                }
+              ],
+              "children": []
+            },
+            {
+              "id": "ask-users",
+              "title": "Ask angry user to help debug",
+              "description": "Maybe they'll feel special",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-02-07T09:00:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "User agreed! Sent them debug build. They replied: 'what is a debug build'. Nevermind.",
+                  "metadata": null,
+                  "created_at": "2024-02-07T14:00:00.000Z"
+                }
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "reproduce",
+          "title": "Reproduce the crash",
+          "description": "Step 1: Be the S7 Edge. Step 2: ???",
+          "status": "done",
+          "source_type": "task",
+          "created_at": "2024-02-08T14:00:00.000Z",
+          "dependencies": [],
+          "events": [
+            {
+              "type": "note",
+              "content": "Tried everything. App works fine. Started to doubt reality.",
+              "metadata": null,
+              "created_at": "2024-02-09T12:00:00.000Z"
+            }
+          ],
+          "children": [
+            {
+              "id": "settings-hunt",
+              "title": "Test every possible setting combination",
+              "description": "There are approximately 1 million",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-02-09T13:00:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "SUCCESS! Crash reproduced! It only happens when: curved edge screen enabled + dark mode + system font size 'huge' + battery below 20%",
+                  "metadata": null,
+                  "created_at": "2024-02-09T16:00:00.000Z"
+                },
+                {
+                  "type": "note",
+                  "content": "User confirmed: 'Yes I always use huge fonts I'm 67 years old'. Fair enough grandpa, we'll fix it.",
+                  "metadata": null,
+                  "created_at": "2024-02-09T16:30:00.000Z"
+                }
+              ],
+              "children": [
+                {
+                  "id": "document-steps",
+                  "title": "Document reproduction steps",
+                  "description": "For the next poor soul who encounters this",
+                  "status": "done",
+                  "source_type": "task",
+                  "created_at": "2024-02-09T17:00:00.000Z",
+                  "dependencies": [],
+                  "events": [
+                    {
+                      "type": "note",
+                      "content": "Created confluence page titled 'The Samsung S7 Edge Incident'. Added to onboarding docs as 'required reading'.",
+                      "metadata": null,
+                      "created_at": "2024-02-09T17:30:00.000Z"
+                    }
+                  ],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "root-cause",
+          "title": "Find root cause",
+          "description": "Descend into Samsung's custom Android hell",
+          "status": "done",
+          "source_type": "investigation",
+          "created_at": "2024-02-10T09:00:00.000Z",
+          "dependencies": [],
+          "events": [
+            {
+              "type": "note",
+              "content": "Samsung's EdgeScreen API returns negative width values when battery is low. NEGATIVE. WIDTH. VALUES. Who approved this?",
+              "metadata": null,
+              "created_at": "2024-02-10T14:00:00.000Z"
+            }
+          ],
+          "children": [
+            {
+              "id": "stackoverflow-search",
+              "title": "Search StackOverflow",
+              "description": "Surely someone has seen this",
+              "status": "done",
+              "source_type": "investigation",
+              "created_at": "2024-02-10T14:30:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Found a post from 2017: 'Samsung S7 Edge negative width bug - anyone else?' 47 upvotes, zero answers. We are alone in this universe.",
+                  "metadata": null,
+                  "created_at": "2024-02-10T15:00:00.000Z"
+                }
+              ],
+              "children": [
+                {
+                  "id": "answer-stackoverflow",
+                  "title": "Answer the 2017 StackOverflow post",
+                  "description": "Be the hero we needed",
+                  "status": "done",
+                  "source_type": "task",
+                  "created_at": "2024-02-11T09:00:00.000Z",
+                  "dependencies": [],
+                  "events": [
+                    {
+                      "type": "note",
+                      "content": "Posted our solution. Got 1 upvote from original poster who said 'lol I moved to iOS development in 2018'. Thanks buddy.",
+                      "metadata": null,
+                      "created_at": "2024-02-11T10:00:00.000Z"
+                    }
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "samsung-docs",
+              "title": "Read Samsung developer documentation",
+              "description": "Optimistic assumption: documentation exists",
+              "status": "done",
+              "source_type": "investigation",
+              "created_at": "2024-02-10T15:30:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Found Samsung Edge SDK docs. Last updated 2019. Example code doesn't compile. Links to 'detailed guide' return 404.",
+                  "metadata": null,
+                  "created_at": "2024-02-10T16:00:00.000Z"
+                }
+              ],
+              "children": []
+            },
+            {
+              "id": "workaround",
+              "title": "Implement cursed workaround",
+              "description": "if (isSamsungS7Edge && battery < 20) { width = Math.abs(width) }",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-02-10T16:30:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Added the most shameful code of my career. It works. I added a comment: '// I'm sorry to whoever reads this'. Pushed to main.",
+                  "metadata": null,
+                  "created_at": "2024-02-10T17:00:00.000Z"
+                }
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "other-devices",
+          "title": "Audit other Samsung devices",
+          "description": "How deep does the rabbit hole go?",
+          "status": "active",
+          "source_type": "investigation",
+          "created_at": "2024-02-11T11:00:00.000Z",
+          "dependencies": [],
+          "events": [
+            {
+              "type": "note",
+              "content": "S8: fine. S9: fine. S10: fine. Note 7: we don't talk about Note 7 (it exploded). A51: ALSO BROKEN but in a completely different way.",
+              "metadata": null,
+              "created_at": "2024-02-11T14:00:00.000Z"
+            }
+          ],
+          "children": [
+            {
+              "id": "a51-bug",
+              "title": "Investigate Galaxy A51 bug",
+              "description": "Oh no here we go again",
+              "status": "active",
+              "source_type": "investigation",
+              "created_at": "2024-02-11T15:00:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "A51 bug: camera preview is upside down but only in landscape. Only when using front camera. Only on Tuesdays (not joking, timezone bug).",
+                  "metadata": null,
+                  "created_at": "2024-02-11T16:00:00.000Z"
+                }
+              ],
+              "children": [
+                {
+                  "id": "buy-a51",
+                  "title": "Buy Galaxy A51",
+                  "description": "The device collection grows",
+                  "status": "active",
+                  "source_type": "task",
+                  "created_at": "2024-02-11T16:30:00.000Z",
+                  "dependencies": [],
+                  "events": [
+                    {
+                      "type": "note",
+                      "content": "Finance asked why we need 'another Samsung phone'. I sent them the bug report. They approved immediately.",
+                      "metadata": null,
+                      "created_at": "2024-02-11T17:00:00.000Z"
+                    }
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "device-lab",
+              "title": "Propose device testing lab",
+              "description": "Buy all 847 Samsung models. For science.",
+              "status": "backlog",
+              "source_type": "task",
+              "created_at": "2024-02-11T17:30:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Budget request: $127,000 for 'comprehensive Samsung device coverage'. CFO said 'lol'. Back to eBay.",
+                  "metadata": null,
+                  "created_at": "2024-02-12T09:00:00.000Z"
+                }
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "career",
+          "title": "Reconsider career choices",
+          "description": "There are 847 unique Samsung device models",
+          "status": "backlog",
+          "source_type": "discovery",
+          "created_at": "2024-02-12T10:00:00.000Z",
+          "dependencies": [],
+          "events": [
+            {
+              "type": "note",
+              "content": "Updated LinkedIn to 'Open to Work'. Started applying to iOS-only companies. Also considered becoming a farmer.",
+              "metadata": null,
+              "created_at": "2024-02-12T11:00:00.000Z"
+            }
+          ],
+          "children": []
+        }
+      ]
+    }
+  ]
+}

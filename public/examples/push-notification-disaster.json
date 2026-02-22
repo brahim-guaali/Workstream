@@ -1,0 +1,417 @@
+{
+  "version": 2,
+  "exportedAt": "2024-01-15T10:00:00.000Z",
+  "metrics": [
+    {
+      "id": "app-rating",
+      "name": "App Store Rating",
+      "value": 2.1,
+      "initialValue": 4.5,
+      "target": 4.0
+    },
+    {
+      "id": "uninstalls",
+      "name": "Rage Uninstalls",
+      "value": 340000,
+      "initialValue": 0,
+      "target": 0
+    },
+    {
+      "id": "angry-reviews",
+      "name": "1-Star Reviews",
+      "value": 12847,
+      "initialValue": 230,
+      "target": 230
+    },
+    {
+      "id": "babies-woken",
+      "name": "Babies Reportedly Woken",
+      "value": 847,
+      "initialValue": 0,
+      "target": 0
+    }
+  ],
+  "streams": [
+    {
+      "id": "root",
+      "title": "Push notification woke up 2M users at 3am",
+      "description": "Marketing scheduled it for 3pm. Timezone is a social construct apparently.",
+      "status": "active",
+      "source_type": "investigation",
+      "created_at": "2024-03-01T03:00:00.000Z",
+      "dependencies": [],
+      "events": [
+        {
+          "type": "note",
+          "content": "Notification content: 'Don't miss our FLASH SALE! 🔥' App rating dropped from 4.5 to 2.1 stars in 4 hours.",
+          "metadata": null,
+          "created_at": "2024-03-01T03:15:00.000Z"
+        },
+        {
+          "type": "note",
+          "content": "Top review: 'This app woke up my baby. Then it woke up my other baby. 1 star.' 847 people found this helpful.",
+          "metadata": null,
+          "created_at": "2024-03-01T07:00:00.000Z"
+        }
+      ],
+      "children": [
+        {
+          "id": "damage",
+          "title": "Assess the damage",
+          "description": "Count the bodies",
+          "status": "done",
+          "source_type": "task",
+          "created_at": "2024-03-01T08:00:00.000Z",
+          "dependencies": [],
+          "events": [
+            {
+              "type": "note",
+              "content": "2.1M notifications sent. 340K users uninstalled. Support inbox: 12,847 angry emails.",
+              "metadata": null,
+              "created_at": "2024-03-01T09:00:00.000Z"
+            }
+          ],
+          "children": [
+            {
+              "id": "ceo-inbox",
+              "title": "Handle CEO's mom's complaint",
+              "description": "Yes, really",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-03-01T09:30:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "CEO forwarded email from his mom: 'Honey why did your app buzz at 3am? Is everything okay?' Now it's a P0 incident.",
+                  "metadata": null,
+                  "created_at": "2024-03-01T09:35:00.000Z"
+                }
+              ],
+              "children": []
+            },
+            {
+              "id": "social-media",
+              "title": "Monitor social media meltdown",
+              "description": "We're trending. Not in a good way.",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-03-01T09:45:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Trending hashtag: #3amFlashSale. Most popular tweet: 'The only flash I saw at 3am was my phone screen burning my retinas'. 47K likes.",
+                  "metadata": null,
+                  "created_at": "2024-03-01T10:00:00.000Z"
+                }
+              ],
+              "children": [
+                {
+                  "id": "memes",
+                  "title": "Track memes being created about us",
+                  "description": "For the postmortem. And crying.",
+                  "status": "done",
+                  "source_type": "task",
+                  "created_at": "2024-03-01T10:30:00.000Z",
+                  "dependencies": [],
+                  "events": [
+                    {
+                      "type": "note",
+                      "content": "Someone photoshopped our logo onto a vampire. Another made a horror movie poster: 'THE NOTIFICATION'. We're saving these for the company party.",
+                      "metadata": null,
+                      "created_at": "2024-03-01T11:00:00.000Z"
+                    }
+                  ],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "find-cause",
+          "title": "Find who did this",
+          "description": "Prepare the blame cannon",
+          "status": "done",
+          "source_type": "investigation",
+          "created_at": "2024-03-01T09:30:00.000Z",
+          "dependencies": [],
+          "events": [
+            {
+              "type": "note",
+              "content": "Marketing says they selected 3pm. Backend logs show 03:00. They meant 3pm LOCAL time. Server is in UTC.",
+              "metadata": null,
+              "created_at": "2024-03-01T10:00:00.000Z"
+            }
+          ],
+          "children": [
+            {
+              "id": "ux-audit",
+              "title": "Audit the notification dashboard UX",
+              "description": "How did we let this happen?",
+              "status": "done",
+              "source_type": "investigation",
+              "created_at": "2024-03-01T10:15:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "The dashboard DOES say 'UTC' next to the time picker. In 8px light gray font. Below the fold. Inside a collapsed accordion. Behind a tooltip that requires 3-second hover.",
+                  "metadata": null,
+                  "created_at": "2024-03-01T10:30:00.000Z"
+                }
+              ],
+              "children": [
+                {
+                  "id": "find-designer",
+                  "title": "Find who designed this",
+                  "description": "For educational purposes only",
+                  "status": "done",
+                  "source_type": "investigation",
+                  "created_at": "2024-03-01T10:45:00.000Z",
+                  "dependencies": [],
+                  "events": [
+                    {
+                      "type": "note",
+                      "content": "It was a contractor. From 2019. Company dissolved. They're probably on a beach somewhere, unaware of the chaos.",
+                      "metadata": null,
+                      "created_at": "2024-03-01T11:00:00.000Z"
+                    }
+                  ],
+                  "children": []
+                },
+                {
+                  "id": "ux-fix",
+                  "title": "Make timezone VERY obvious",
+                  "description": "Cannot be missed this time",
+                  "status": "done",
+                  "source_type": "task",
+                  "created_at": "2024-03-01T11:30:00.000Z",
+                  "dependencies": [],
+                  "events": [
+                    {
+                      "type": "note",
+                      "content": "New UX: Timezone selector at the top. Shows local AND server time. Confirmation modal. 'Are you sure?' popup. 'Are you REALLY sure?' popup. Final confirmation with captcha.",
+                      "metadata": null,
+                      "created_at": "2024-03-01T16:00:00.000Z"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "id": "quiet-hours",
+                      "title": "Implement quiet hours feature",
+                      "description": "Block sends between 10pm-8am local time",
+                      "status": "done",
+                      "source_type": "task",
+                      "created_at": "2024-03-01T16:30:00.000Z",
+                      "dependencies": [],
+                      "events": [
+                        {
+                          "type": "note",
+                          "content": "Added hard block on night sends. Marketing complained. We showed them the App Store reviews. They stopped complaining.",
+                          "metadata": null,
+                          "created_at": "2024-03-02T11:00:00.000Z"
+                        }
+                      ],
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "marketing-access",
+              "title": "Review marketing dashboard access",
+              "description": "Maybe they need supervision",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-03-01T14:00:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "New policy: all push notifications require engineering approval. Marketing calls it 'bureaucracy'. We call it 'not waking up 2 million people'.",
+                  "metadata": null,
+                  "created_at": "2024-03-01T15:00:00.000Z"
+                }
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "apology",
+          "title": "Craft apology push notification",
+          "description": "Yes, we're sending ANOTHER notification. Yes, we see the irony.",
+          "status": "done",
+          "source_type": "task",
+          "created_at": "2024-03-01T14:00:00.000Z",
+          "dependencies": [],
+          "events": [],
+          "children": [
+            {
+              "id": "draft-apology",
+              "title": "Draft apology message",
+              "description": "Every word will be scrutinized",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-03-01T14:30:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Draft 1: 'We're deeply sorry.' Legal: 'Too much liability.' Draft 2: 'Oops! Our bad!' Marketing: 'Not professional.' Draft 3: 'We experienced a scheduling anomaly.' Everyone: 'Fine, ship it.'",
+                  "metadata": null,
+                  "created_at": "2024-03-01T15:00:00.000Z"
+                }
+              ],
+              "children": [
+                {
+                  "id": "triple-check",
+                  "title": "Triple check send time",
+                  "description": "We cannot mess this up again",
+                  "status": "done",
+                  "source_type": "task",
+                  "created_at": "2024-03-01T15:15:00.000Z",
+                  "dependencies": [],
+                  "events": [
+                    {
+                      "type": "note",
+                      "content": "5 engineers verified the timezone. PM verified. Designer verified. CEO's mom verified (she volunteered). We're good.",
+                      "metadata": null,
+                      "created_at": "2024-03-01T15:30:00.000Z"
+                    }
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "send-apology",
+              "title": "Send apology notification",
+              "description": "Moment of truth",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-03-01T15:45:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Sent at 3pm UTC = 11am Eastern = 8am Pacific. Woke up absolutely no one. Small victories. We're learning.",
+                  "metadata": null,
+                  "created_at": "2024-03-01T15:50:00.000Z"
+                }
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "reviews",
+          "title": "Reply to 12,000 app store reviews",
+          "description": "Intern's time to shine",
+          "status": "active",
+          "source_type": "task",
+          "created_at": "2024-03-02T09:00:00.000Z",
+          "dependencies": [],
+          "events": [],
+          "children": [
+            {
+              "id": "template",
+              "title": "Create review response template",
+              "description": "Balance apology with not admitting too much",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-03-02T09:30:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Template approved: 'We sincerely apologize for the early notification. We've implemented safeguards to prevent this. As a token of apology, enjoy 10% off!'",
+                  "metadata": null,
+                  "created_at": "2024-03-02T10:00:00.000Z"
+                }
+              ],
+              "children": []
+            },
+            {
+              "id": "reply-reviews",
+              "title": "Start replying to reviews",
+              "description": "This will take weeks",
+              "status": "active",
+              "source_type": "task",
+              "created_at": "2024-03-02T10:30:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Reply from user: 'I don't want 10% off I want my SLEEP back'. Another: 'Your 10% off code didn't work.' Oh no.",
+                  "metadata": null,
+                  "created_at": "2024-03-02T14:00:00.000Z"
+                }
+              ],
+              "children": [
+                {
+                  "id": "promo-code-bug",
+                  "title": "Fix broken promo code",
+                  "description": "Of course the apology gift is broken",
+                  "status": "active",
+                  "source_type": "blocker",
+                  "created_at": "2024-03-02T14:30:00.000Z",
+                  "dependencies": [],
+                  "events": [
+                    {
+                      "type": "note",
+                      "content": "Promo code 'SORRY10' was set to expire yesterday. Created by same contractor from 2019. Sensing a pattern.",
+                      "metadata": null,
+                      "created_at": "2024-03-02T15:00:00.000Z"
+                    }
+                  ],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "retro",
+          "title": "Blameless postmortem",
+          "description": "Technically blameless. Spiritually we all know.",
+          "status": "done",
+          "source_type": "meeting",
+          "created_at": "2024-03-03T09:00:00.000Z",
+          "dependencies": [],
+          "events": [
+            {
+              "type": "note",
+              "content": "Action items: 1) Better timezone UX ✓ 2) Quiet hours feature ✓ 3) Approval workflow ✓ 4) Revoke Dave's dashboard access (not written but understood)",
+              "metadata": null,
+              "created_at": "2024-03-03T10:00:00.000Z"
+            }
+          ],
+          "children": [
+            {
+              "id": "doc-incident",
+              "title": "Document incident for future reference",
+              "description": "So we never forget",
+              "status": "done",
+              "source_type": "task",
+              "created_at": "2024-03-03T11:00:00.000Z",
+              "dependencies": [],
+              "events": [
+                {
+                  "type": "note",
+                  "content": "Created internal wiki page: 'The Great 3am Notification Incident of 2024'. Required reading for all new marketing hires. Includes meme collection.",
+                  "metadata": null,
+                  "created_at": "2024-03-03T12:00:00.000Z"
+                }
+              ],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
