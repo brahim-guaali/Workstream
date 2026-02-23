@@ -802,9 +802,11 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       const titleLineHeight = parseInt(titleFontSize) + 3;
       const descY = 20 + titleLines * titleLineHeight + 6; // 6px gap after title
 
-      // Description preview (multi-line, up to 2 lines)
-      if (node.stream.description) {
-        wrapText(nodeGroup, node.stream.description, 16, descY, node.width - 32, '11px', '400', '#78716c', 2);
+      // Description preview — limit lines to avoid overlapping bottom badges/tags
+      const descLineHeight = 14; // 11px font + 3px spacing
+      const descMaxLines = Math.min(2, Math.max(0, Math.floor((node.height - 26 - descY) / descLineHeight) + 1));
+      if (node.stream.description && descMaxLines > 0) {
+        wrapText(nodeGroup, node.stream.description, 16, descY, node.width - 32, '11px', '400', '#78716c', descMaxLines);
       }
 
       // Dependency tags (bottom-left, compact pills — stop before the type badge)
