@@ -634,7 +634,7 @@ export function ProjectPage() {
           streamTree={displayTree}
           selectedStreamId={selectedStream?.id || null}
           onSelectStream={handleSelectStream}
-          onUpdateStreamPosition={handleUpdateStreamPosition}
+          onUpdateStreamPosition={isReadOnly ? undefined : handleUpdateStreamPosition}
           onCreateChildSlice={isReadOnly ? undefined : handleCreateChildSlice}
           pendingSlice={pendingSlice}
           focusedStreamId={focusedStreamId}

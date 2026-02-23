@@ -347,6 +347,10 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       .node-draggable:active {
         cursor: grabbing;
       }
+      .node-pointer {
+        cursor: pointer;
+        transition: opacity 0.2s ease-in-out;
+      }
       .node-faded {
         opacity: 0.25;
       }
@@ -495,7 +499,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       const nodeGroup = g
         .append('g')
         .attr('transform', `translate(${adjustedPos.x}, ${adjustedPos.y})`)
-        .attr('class', `node-draggable${!isNodeFocused ? ' node-faded' : ''}`)
+        .attr('class', `${onUpdateStreamPosition ? 'node-draggable' : 'node-pointer'}${!isNodeFocused ? ' node-faded' : ''}`)
         .attr('data-node-id', node.id);
 
       // Add drag behavior to node
@@ -519,8 +523,9 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         .on('drag', function(event) {
           event.sourceEvent.preventDefault();
 
-          // When drag is locked, ignore all drag movement
+          // When drag is locked or read-only, ignore all drag movement
           if (dragLockedRef.current) return;
+          if (!onUpdateStreamPosition) return;
 
           // Get the node group dynamically using 'this'
           const currentNodeGroup = d3.select(this);
@@ -1192,22 +1197,26 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         >
           <ZoomOut className="w-4 h-4" />
         </button>
-        <div className="w-px h-5 bg-stone-200 dark:bg-stone-700 mx-0.5" />
-        <button
-          onClick={() => setDragLocked((v) => {
-            const next = !v;
-            localStorage.setItem('dragLocked', String(next));
-            return next;
-          })}
-          className={`p-2 rounded-lg transition-colors ${
-            dragLocked
-              ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400'
-              : 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300'
-          }`}
-          title={dragLocked ? 'Unlock node dragging' : 'Lock node positions'}
-        >
-          {dragLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-        </button>
+        {onUpdateStreamPosition && (
+          <>
+            <div className="w-px h-5 bg-stone-200 dark:bg-stone-700 mx-0.5" />
+            <button
+              onClick={() => setDragLocked((v) => {
+                const next = !v;
+                localStorage.setItem('dragLocked', String(next));
+                return next;
+              })}
+              className={`p-2 rounded-lg transition-colors ${
+                dragLocked
+                  ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400'
+                  : 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300'
+              }`}
+              title={dragLocked ? 'Unlock node dragging' : 'Lock node positions'}
+            >
+              {dragLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+            </button>
+          </>
+        )}
         <div className="w-px h-5 bg-stone-200 dark:bg-stone-700 mx-0.5" />
         <button
           onClick={fitAll}
