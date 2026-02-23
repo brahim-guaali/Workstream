@@ -67,6 +67,7 @@ export function ProjectPage() {
   const [activeStatusFilters, setActiveStatusFilters] = useState<Set<StreamStatus>>(new Set());
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const [isCanvasFullscreen, setIsCanvasFullscreen] = useState(false);
 
   const { events, loading: eventsLoading, createEvent, deleteEvent } = useEvents(projectId, selectedStream?.id, ownerId);
 
@@ -207,6 +208,16 @@ export function ProjectPage() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [isSearchDropdownOpen]);
+
+  // Escape key exits canvas fullscreen
+  useEffect(() => {
+    if (!isCanvasFullscreen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsCanvasFullscreen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isCanvasFullscreen]);
 
   const handleSelectStream = useCallback((stream: StreamWithChildren) => {
     setSelectedStream(stream);
@@ -483,6 +494,181 @@ export function ProjectPage() {
           )}
         </div>
       </Layout>
+    );
+  }
+
+  const canvasContent = (
+    <div className={`flex-1 overflow-hidden relative ${isCanvasFullscreen ? 'w-full h-full' : ''}`}>
+      {/* Search & filter overlay */}
+      {streams.length > 0 && (
+        <div ref={searchContainerRef} className="absolute top-3 left-3 z-30 max-w-lg" style={{ right: 'auto' }}>
+          <div className="flex flex-col gap-2">
+            {/* Search input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchDropdownOpen(true);
+                }}
+                onFocus={() => setIsSearchDropdownOpen(true)}
+                placeholder="Search streams..."
+                className="w-64 pl-9 pr-8 py-2 text-sm bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-stone-900 dark:text-stone-100 placeholder:text-stone-400"
+              />
+              {(searchQuery || activeStatusFilters.size > 0) && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setActiveStatusFilters(new Set());
+                    setIsSearchDropdownOpen(false);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-400 hover:text-stone-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Status filter pills */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {(Object.keys(STATUS_CONFIG) as StreamStatus[]).map((status) => {
+                const isActive = activeStatusFilters.has(status);
+                return (
+                  <button
+                    key={status}
+                    onClick={() => {
+                      setActiveStatusFilters((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(status)) {
+                          next.delete(status);
+                        } else {
+                          next.add(status);
+                        }
+                        return next;
+                      });
+                      setIsSearchDropdownOpen(true);
+                    }}
+                    className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-colors shadow-sm ${
+                      isActive
+                        ? 'border-transparent text-white font-medium'
+                        : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-750'
+                    }`}
+                    style={isActive ? { backgroundColor: statusHexColors[status] } : undefined}
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: isActive ? '#ffffff' : statusHexColors[status] }}
+                    />
+                    {statusLabels[status]}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search results dropdown */}
+            {isSearchDropdownOpen && (searchQuery.trim() || activeStatusFilters.size > 0) && (
+              <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                {searchResults.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-stone-500 dark:text-stone-400">
+                    No matching streams
+                  </div>
+                ) : (
+                  searchResults.map((stream) => (
+                    <button
+                      key={stream.id}
+                      onClick={() => {
+                        handleSelectStream(stream);
+                        setIsSearchDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-stone-50 dark:hover:bg-stone-750 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: statusHexColors[stream.status as StreamStatus] }}
+                      />
+                      <span className="text-sm text-stone-900 dark:text-stone-100 truncate flex-1">
+                        {stream.title}
+                      </span>
+                      <span
+                        className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
+                        style={{
+                          backgroundColor: `${statusHexColors[stream.status as StreamStatus]}20`,
+                          color: statusHexColors[stream.status as StreamStatus],
+                        }}
+                      >
+                        {statusLabels[stream.status as StreamStatus]}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {streams.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-full text-center px-4">
+          <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center mb-4">
+            <Plus className="w-8 h-8 text-stone-400" />
+          </div>
+          <h3 className="text-lg font-medium text-stone-900 dark:text-stone-100 mb-2">
+            No streams yet
+          </h3>
+          <p className="text-stone-500 dark:text-stone-400 mb-4 max-w-sm">
+            {isReadOnly
+              ? 'This project has no streams yet.'
+              : 'Start by creating your first stream to track your project\'s evolution'}
+          </p>
+          {!isReadOnly && (
+            <Button onClick={handleOpenAddModal}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create First Stream
+            </Button>
+          )}
+        </div>
+      ) : (
+        <StreamTree
+          streamTree={displayTree}
+          selectedStreamId={selectedStream?.id || null}
+          onSelectStream={handleSelectStream}
+          onUpdateStreamPosition={handleUpdateStreamPosition}
+          onCreateChildSlice={isReadOnly ? undefined : handleCreateChildSlice}
+          pendingSlice={pendingSlice}
+          focusedStreamId={focusedStreamId}
+          onExitFocus={() => setFocusedStreamId(null)}
+          highlightedStreamIds={highlightedStreamIds}
+          isFullscreen={isCanvasFullscreen}
+          onToggleFullscreen={() => setIsCanvasFullscreen(prev => !prev)}
+        />
+      )}
+    </div>
+  );
+
+  if (isCanvasFullscreen) {
+    return (
+      <>
+        <div className="fixed inset-0 z-50 bg-stone-50 dark:bg-stone-950">
+          {canvasContent}
+        </div>
+
+        {!isReadOnly && (
+          <AddStreamModal
+            isOpen={isAddModalOpen}
+            onClose={() => {
+              setIsAddModalOpen(false);
+              setBranchFromStreamId(null);
+              setNewSlicePosition(null);
+              setPendingSlice(null);
+            }}
+            onSubmit={handleCreateStream}
+            streams={streamTree}
+            defaultParentId={branchFromStreamId}
+          />
+        )}
+      </>
     );
   }
 
@@ -881,151 +1067,7 @@ export function ProjectPage() {
         {/* Main content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Visualization */}
-          <div className="flex-1 overflow-hidden relative">
-            {/* Search & filter overlay */}
-            {streams.length > 0 && (
-              <div ref={searchContainerRef} className="absolute top-3 left-3 z-30 max-w-lg" style={{ right: 'auto' }}>
-                <div className="flex flex-col gap-2">
-                  {/* Search input */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value);
-                        setIsSearchDropdownOpen(true);
-                      }}
-                      onFocus={() => setIsSearchDropdownOpen(true)}
-                      placeholder="Search streams..."
-                      className="w-64 pl-9 pr-8 py-2 text-sm bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-stone-900 dark:text-stone-100 placeholder:text-stone-400"
-                    />
-                    {(searchQuery || activeStatusFilters.size > 0) && (
-                      <button
-                        onClick={() => {
-                          setSearchQuery('');
-                          setActiveStatusFilters(new Set());
-                          setIsSearchDropdownOpen(false);
-                        }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-400 hover:text-stone-600"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Status filter pills */}
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {(Object.keys(STATUS_CONFIG) as StreamStatus[]).map((status) => {
-                      const isActive = activeStatusFilters.has(status);
-                      return (
-                        <button
-                          key={status}
-                          onClick={() => {
-                            setActiveStatusFilters((prev) => {
-                              const next = new Set(prev);
-                              if (next.has(status)) {
-                                next.delete(status);
-                              } else {
-                                next.add(status);
-                              }
-                              return next;
-                            });
-                            setIsSearchDropdownOpen(true);
-                          }}
-                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-colors shadow-sm ${
-                            isActive
-                              ? 'border-transparent text-white font-medium'
-                              : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-750'
-                          }`}
-                          style={isActive ? { backgroundColor: statusHexColors[status] } : undefined}
-                        >
-                          <span
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: isActive ? '#ffffff' : statusHexColors[status] }}
-                          />
-                          {statusLabels[status]}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Search results dropdown */}
-                  {isSearchDropdownOpen && (searchQuery.trim() || activeStatusFilters.size > 0) && (
-                    <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-lg max-h-80 overflow-y-auto">
-                      {searchResults.length === 0 ? (
-                        <div className="px-4 py-3 text-sm text-stone-500 dark:text-stone-400">
-                          No matching streams
-                        </div>
-                      ) : (
-                        searchResults.map((stream) => (
-                          <button
-                            key={stream.id}
-                            onClick={() => {
-                              handleSelectStream(stream);
-                              setIsSearchDropdownOpen(false);
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-stone-50 dark:hover:bg-stone-750 transition-colors first:rounded-t-lg last:rounded-b-lg"
-                          >
-                            <span
-                              className="w-2 h-2 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: statusHexColors[stream.status as StreamStatus] }}
-                            />
-                            <span className="text-sm text-stone-900 dark:text-stone-100 truncate flex-1">
-                              {stream.title}
-                            </span>
-                            <span
-                              className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
-                              style={{
-                                backgroundColor: `${statusHexColors[stream.status as StreamStatus]}20`,
-                                color: statusHexColors[stream.status as StreamStatus],
-                              }}
-                            >
-                              {statusLabels[stream.status as StreamStatus]}
-                            </span>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {streams.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center mb-4">
-                  <Plus className="w-8 h-8 text-stone-400" />
-                </div>
-                <h3 className="text-lg font-medium text-stone-900 dark:text-stone-100 mb-2">
-                  No streams yet
-                </h3>
-                <p className="text-stone-500 dark:text-stone-400 mb-4 max-w-sm">
-                  {isReadOnly
-                    ? 'This project has no streams yet.'
-                    : 'Start by creating your first stream to track your project\'s evolution'}
-                </p>
-                {!isReadOnly && (
-                  <Button onClick={handleOpenAddModal}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create First Stream
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <StreamTree
-                streamTree={displayTree}
-                selectedStreamId={selectedStream?.id || null}
-                onSelectStream={handleSelectStream}
-                onUpdateStreamPosition={handleUpdateStreamPosition}
-                onCreateChildSlice={isReadOnly ? undefined : handleCreateChildSlice}
-                pendingSlice={pendingSlice}
-                focusedStreamId={focusedStreamId}
-                onExitFocus={() => setFocusedStreamId(null)}
-                highlightedStreamIds={highlightedStreamIds}
-              />
-            )}
-          </div>
+          {canvasContent}
 
           {/* Detail sidebar — desktop */}
           {selectedStream && (

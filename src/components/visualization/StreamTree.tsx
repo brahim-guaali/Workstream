@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import * as d3 from 'd3';
-import { ZoomIn, ZoomOut, X, Crosshair, Lock, Unlock } from 'lucide-react';
+import { ZoomIn, ZoomOut, X, Crosshair, Lock, Unlock, Maximize2, Minimize2 } from 'lucide-react';
 import type { StreamWithChildren } from '../../types/database';
 import { useVisualization } from '../../hooks/useVisualization';
 import { statusHexColors, sourceTypeHexColors, statusIcons, statusLabels, sourceTypeLabels } from '../../lib/streamConfig';
@@ -15,6 +15,8 @@ interface StreamTreeProps {
   focusedStreamId?: string | null;
   onExitFocus?: () => void;
   highlightedStreamIds?: Set<string> | null;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 export interface StreamTreeHandle {
@@ -31,6 +33,8 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
   focusedStreamId,
   onExitFocus,
   highlightedStreamIds,
+  isFullscreen,
+  onToggleFullscreen,
 }, ref) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1212,6 +1216,18 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         >
           <Crosshair className="w-4 h-4" />
         </button>
+        {onToggleFullscreen && (
+          <>
+            <div className="w-px h-5 bg-stone-200 dark:bg-stone-700 mx-0.5" />
+            <button
+              onClick={onToggleFullscreen}
+              className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors"
+              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
