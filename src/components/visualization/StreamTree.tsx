@@ -740,7 +740,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         fontWeight: string,
         fill: string,
         maxLines: number
-      ) => {
+      ): number => {
         const words = text.split(/\s+/);
         let line = '';
         let lineNumber = 0;
@@ -791,17 +791,20 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         }
 
         tempText.remove();
+        return lineNumber + (line ? 1 : 0);
       };
 
-      // Title (multi-line, up to 2 lines) — font size scales with title length
+      // Title (multi-line, up to 3 lines) — font size scales with title length
       const titleMaxWidth = node.width - badgeWidth - 36;
       const titleLen = node.stream.title.length;
       const titleFontSize = titleLen <= 15 ? '16px' : titleLen <= 30 ? '14px' : '13px';
-      wrapText(nodeGroup, node.stream.title, 16, 20, titleMaxWidth, titleFontSize, '600', '#292524', 3);
+      const titleLines = wrapText(nodeGroup, node.stream.title, 16, 20, titleMaxWidth, titleFontSize, '600', '#292524', 3);
+      const titleLineHeight = parseInt(titleFontSize) + 3;
+      const descY = 20 + titleLines * titleLineHeight + 6; // 6px gap after title
 
       // Description preview (multi-line, up to 2 lines)
       if (node.stream.description) {
-        wrapText(nodeGroup, node.stream.description, 16, 48, node.width - 32, '11px', '400', '#78716c', 2);
+        wrapText(nodeGroup, node.stream.description, 16, descY, node.width - 32, '11px', '400', '#78716c', 2);
       }
 
       // Dependency tags (bottom-left, compact pills — stop before the type badge)
