@@ -80,8 +80,18 @@ export function getRelativeTime(dateString: string): string {
 }
 
 export function metricProgress(m: ProjectMetric): { pct: number; isPositive: boolean } | null {
-  if (m.initialValue === 0 || m.value === m.initialValue) return null;
-  const pct = Math.round(((m.value - m.initialValue) / Math.abs(m.initialValue)) * 100);
+  if (m.value === m.initialValue) return null;
+  let pct: number;
+  if (m.initialValue === 0) {
+    // Can't compute % change from zero — show progress toward target instead
+    if (m.target != null && m.target !== 0) {
+      pct = Math.round((m.value / m.target) * 100);
+    } else {
+      return null; // No target and no initial — nothing meaningful to show
+    }
+  } else {
+    pct = Math.round(((m.value - m.initialValue) / Math.abs(m.initialValue)) * 100);
+  }
   // If target exists and is below initial, the user wants a decrease — flip "positive" logic
   const isPositive = m.target != null && m.target < m.initialValue ? pct < 0 : pct > 0;
   return { pct, isPositive };
