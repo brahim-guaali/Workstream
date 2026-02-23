@@ -166,36 +166,15 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
     animateViewTo(panRef.current.x, panRef.current.y, target, duration);
   }, [animateViewTo]);
 
-  // Wheel zoom: accumulate a target and animate toward cursor position
-  const wheelZoomTarget = useRef(zoom);
-  wheelZoomTarget.current = zoom; // stay in sync when not wheeling
-  const wheelAnimRef = useRef<number>(0);
+  // Wheel/trackpad zoom: apply directly with no animation.
+  // Trackpad pinch fires at ~60fps — animating on top fights the natural input.
   const handleWheelZoom = useCallback((deltaY: number, cursorX: number, cursorY: number) => {
     const delta = -deltaY * 0.001;
-    wheelZoomTarget.current = Math.min(3, Math.max(0.2, wheelZoomTarget.current + delta));
-    cancelAnimationFrame(wheelAnimRef.current);
-    const startZoom = zoomRef.current;
-    const startPan = { ...panRef.current };
-    const endZoom = wheelZoomTarget.current;
-    // Compute target pan so the world point under the cursor stays fixed
-    const endPanX = cursorX - (cursorX - startPan.x) * (endZoom / startZoom);
-    const endPanY = cursorY - (cursorY - startPan.y) * (endZoom / startZoom);
-    const duration = 150;
-    const startTime = performance.now();
-
-    const step = (now: number) => {
-      const t = Math.min((now - startTime) / duration, 1);
-      const ease = 1 - Math.pow(1 - t, 3);
-      setZoom(startZoom + (endZoom - startZoom) * ease);
-      setPan({
-        x: startPan.x + (endPanX - startPan.x) * ease,
-        y: startPan.y + (endPanY - startPan.y) * ease,
-      });
-      if (t < 1) {
-        wheelAnimRef.current = requestAnimationFrame(step);
-      }
-    };
-    wheelAnimRef.current = requestAnimationFrame(step);
+    const newZoom = Math.min(3, Math.max(0.2, zoomRef.current + delta));
+    const newPanX = cursorX - (cursorX - panRef.current.x) * (newZoom / zoomRef.current);
+    const newPanY = cursorY - (cursorY - panRef.current.y) * (newZoom / zoomRef.current);
+    setZoom(newZoom);
+    setPan({ x: newPanX, y: newPanY });
   }, [setZoom, setPan]);
 
   // Fit all nodes in the viewport
