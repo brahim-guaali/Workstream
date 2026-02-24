@@ -33,7 +33,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
   return [
     {
       title: `${firstName}'s Weekend Hackathon`,
-      description: null,
+      description: `The master plan: ${firstName} builds and ships a side project in one weekend`,
       status: 'active',
       sourceType: 'task',
       dependencies: [],
@@ -42,7 +42,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
       children: [
         {
           title: 'Brainstorm app ideas',
-          description: null,
+          description: 'Explore what to build — collect ideas, research the market, and pick a winner',
           status: 'done',
           sourceType: 'investigation',
           dependencies: [],
@@ -51,7 +51,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
           children: [
             {
               title: 'Research trending APIs',
-              description: null,
+              description: 'Look into popular APIs that could power the app — AI, payments, maps, etc.',
               status: 'active',
               sourceType: 'investigation',
               dependencies: [],
@@ -60,7 +60,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
               children: [
                 {
                   title: 'Waiting on API key approval',
-                  description: null,
+                  description: `${firstName} applied for API access — can't move forward until it's approved`,
                   status: 'blocked',
                   sourceType: 'blocker',
                   dependencies: [firstName],
@@ -70,7 +70,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
                 },
                 {
                   title: 'Prototype with Maps API',
-                  description: null,
+                  description: 'Quick spike to see if the Maps API fits the app concept',
                   status: 'active',
                   sourceType: 'discovery',
                   dependencies: [],
@@ -82,7 +82,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
             },
             {
               title: 'Pick the tech stack',
-              description: null,
+              description: 'Team sync to decide on frontend framework, backend, and hosting',
               status: 'done',
               sourceType: 'meeting',
               dependencies: [],
@@ -91,7 +91,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
               children: [
                 {
                   title: 'Learn React basics',
-                  description: null,
+                  description: 'Follow the official tutorial to get comfortable with components and hooks',
                   status: 'done',
                   sourceType: 'task',
                   dependencies: [],
@@ -101,7 +101,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
                 },
                 {
                   title: 'Set up Firebase project',
-                  description: null,
+                  description: 'Create the Firebase project, enable auth and Firestore',
                   status: 'done',
                   sourceType: 'task',
                   dependencies: [],
@@ -113,7 +113,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
             },
             {
               title: 'Write project README',
-              description: null,
+              description: 'Document what the app does, how to run it, and the tech stack',
               status: 'backlog',
               sourceType: 'task',
               dependencies: [],
@@ -125,7 +125,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
         },
         {
           title: 'Build the app',
-          description: null,
+          description: 'The main build phase — design, code, and polish the core features',
           status: 'active',
           sourceType: 'task',
           dependencies: [],
@@ -134,7 +134,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
           children: [
             {
               title: 'Design the UI mockups',
-              description: null,
+              description: 'Sketch out the key screens — home, detail view, and settings',
               status: 'active',
               sourceType: 'discovery',
               dependencies: [`${firstName}'s sketches`],
@@ -144,7 +144,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
             },
             {
               title: 'Set up the project repo',
-              description: null,
+              description: 'Init the repo, add .gitignore, configure linting and formatting',
               status: 'done',
               sourceType: 'task',
               dependencies: [],
@@ -154,7 +154,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
             },
             {
               title: 'Implement auth flow',
-              description: null,
+              description: 'Add Google sign-in, session persistence, and a logout button',
               status: 'active',
               sourceType: 'task',
               dependencies: ['Design Team'],
@@ -164,7 +164,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
             },
             {
               title: 'Add dark mode',
-              description: null,
+              description: 'Support light/dark themes with a toggle in the header',
               status: 'backlog',
               sourceType: 'discovery',
               dependencies: [],
@@ -176,7 +176,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
         },
         {
           title: 'Launch prep',
-          description: null,
+          description: 'Get everything ready to ship — marketing, final checks, and deploy',
           status: 'backlog',
           sourceType: 'task',
           dependencies: [],
@@ -185,7 +185,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
           children: [
             {
               title: 'Write launch tweet',
-              description: null,
+              description: 'Craft a short, punchy announcement for social media',
               status: 'backlog',
               sourceType: 'task',
               dependencies: [],
@@ -195,7 +195,7 @@ function buildStreamTree(firstName: string): SeedStream[] {
             },
             {
               title: 'Deploy to production',
-              description: null,
+              description: 'Push the final build to Firebase Hosting and verify everything works',
               status: 'backlog',
               sourceType: 'task',
               dependencies: ['Build the app'],
