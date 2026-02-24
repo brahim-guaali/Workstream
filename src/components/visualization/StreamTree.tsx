@@ -671,25 +671,22 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         .attr('stroke', isSelected ? '#FF5A00' : '#e7e5e4')
         .attr('stroke-width', sw);
 
-      // Status indicator - colored left border
+      // Status indicator - colored left border (clipped to card shape)
+      const clipId = `card-clip-${node.id}`;
+      defs.append('clipPath').attr('id', clipId)
+        .append('rect')
+        .attr('width', node.width)
+        .attr('height', node.height)
+        .attr('rx', 8);
+
       nodeGroup
         .append('rect')
         .attr('x', 0)
         .attr('y', 0)
         .attr('width', 6)
         .attr('height', node.height)
-        .attr('rx', 8)
         .attr('fill', statusColor)
-        .attr('clip-path', 'inset(0 round 8px 0 0 8px)');
-
-      // Clean left border (cover the rounded right edge)
-      nodeGroup
-        .append('rect')
-        .attr('x', 4)
-        .attr('y', 1)
-        .attr('width', 3)
-        .attr('height', node.height - 2)
-        .attr('fill', statusColor);
+        .attr('clip-path', `url(#${clipId})`);
 
       // Status badge with icon and label
       const badgeWidth = (node.stream.status === 'blocked' || node.stream.status === 'backlog') ? 80 : 70;
@@ -1207,7 +1204,8 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           <button
             onClick={onExitFocus}
             className="p-0.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
-            title="Exit focus"
+            data-tooltip="Exit focus"
+            data-tooltip-placement="bottom"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -1220,7 +1218,8 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         <button
           onClick={() => animateZoomTo(Math.min(3, zoomRef.current + 0.15))}
           className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors"
-          title="Zoom in"
+          data-tooltip="Zoom in"
+          data-tooltip-placement="left"
         >
           <ZoomIn className="w-4 h-4" />
         </button>
@@ -1230,7 +1229,8 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         <button
           onClick={() => animateZoomTo(Math.max(0.2, zoomRef.current - 0.15))}
           className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors"
-          title="Zoom out"
+          data-tooltip="Zoom out"
+          data-tooltip-placement="left"
         >
           <ZoomOut className="w-4 h-4" />
         </button>
@@ -1248,7 +1248,8 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
                   ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400'
                   : 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300'
               }`}
-              title={dragLocked ? 'Unlock node dragging' : 'Lock node positions'}
+              data-tooltip={dragLocked ? 'Unlock node dragging' : 'Lock node positions'}
+              data-tooltip-placement="left"
             >
               {dragLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
             </button>
@@ -1258,7 +1259,8 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         <button
           onClick={fitAll}
           className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors"
-          title="Recenter view"
+          data-tooltip="Recenter view"
+          data-tooltip-placement="left"
         >
           <Crosshair className="w-4 h-4" />
         </button>
@@ -1268,7 +1270,8 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
             <button
               onClick={onToggleFullscreen}
               className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 transition-colors"
-              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              data-tooltip={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              data-tooltip-placement="left"
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
