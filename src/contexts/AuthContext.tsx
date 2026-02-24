@@ -9,6 +9,7 @@ import {
 } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { seedExampleProject } from '../lib/seedExampleProject';
 
 interface AuthContextType {
   user: User | null;
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: user.email,
           displayName: user.displayName,
         }, { merge: true }).catch(() => {});
+        seedExampleProject(user).catch(() => {});
       }
     });
 
