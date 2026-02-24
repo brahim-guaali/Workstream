@@ -553,7 +553,7 @@ export function ProjectPage() {
                     className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-colors shadow-sm ${
                       isActive
                         ? 'border-transparent text-white font-medium'
-                        : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-750'
+                        : 'border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700'
                     }`}
                     style={isActive ? { backgroundColor: statusHexColors[status] } : undefined}
                   >
@@ -582,7 +582,7 @@ export function ProjectPage() {
                         handleSelectStream(stream);
                         setIsSearchDropdownOpen(false);
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-stone-50 dark:hover:bg-stone-750 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors first:rounded-t-lg last:rounded-b-lg"
                     >
                       <span
                         className="w-2 h-2 rounded-full flex-shrink-0"
@@ -1160,7 +1160,7 @@ export function ProjectPage() {
             <div className="space-y-2">
               {promptMetrics.map((m, idx) => (
                 <div key={m.id} className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-stone-700 dark:text-stone-300 w-28 truncate" title={m.name}>
+                  <span className="text-sm font-medium text-stone-700 dark:text-stone-300 w-28 truncate" data-tooltip={m.name}>
                     {m.name}
                   </span>
                   <input
