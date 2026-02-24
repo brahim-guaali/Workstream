@@ -14,4 +14,16 @@
   --color-brand-950: #431500;
   --color-lime-accent: #C8E600;
   --color-lime-accent-dark: #A8C200;
+  --animate-fadeIn: fadeIn 0.2s ease-out;
+  --animate-slideUp: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
