@@ -56,3 +56,20 @@ export const sourceTypeOptions = Object.entries(SOURCE_TYPE_CONFIG).map(([value,
   value: value as SourceType,
   label: c.label,
 }));
+
+export const EMOJI_TAG_OPTIONS = [
+  { emoji: '🔥', label: 'Urgent' },
+  { emoji: '🚀', label: 'Launch' },
+  { emoji: '⭐', label: 'Important' },
+  { emoji: '💡', label: 'Idea' },
+  { emoji: '⚠️', label: 'Caution' },
+  { emoji: '🎯', label: 'Goal' },
+  { emoji: '🐛', label: 'Bug' },
+  { emoji: '👀', label: 'Review' },
+  { emoji: '🎉', label: 'Celebrate' },
+  { emoji: '🧪', label: 'Experiment' },
+  { emoji: '⏰', label: 'Time sensitive' },
+  { emoji: '💎', label: 'High value' },
+] as const;
+
+export const MAX_EMOJI_TAGS = 4;

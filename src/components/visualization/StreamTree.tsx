@@ -944,6 +944,39 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
 
       nodeGroup.append('title').text(tooltipContent);
 
+      // Emoji stickers (top edge, left-to-right starting after the status bar)
+      const emojis = node.stream.emojis ?? [];
+      if (emojis.length > 0) {
+        const stickerR = 14;
+        const stickerSpacing = 30;
+        const stickerStartX = node.width - stickerR - (emojis.length - 1) * stickerSpacing;
+
+        emojis.forEach((emoji, i) => {
+          const cx = stickerStartX + i * stickerSpacing;
+          const cy = -stickerR + 6;
+
+          // White disc background
+          nodeGroup
+            .append('circle')
+            .attr('cx', cx)
+            .attr('cy', cy)
+            .attr('r', stickerR)
+            .attr('fill', '#ffffff')
+            .attr('stroke', '#e7e5e4')
+            .attr('stroke-width', 1.5);
+
+          // Emoji character
+          nodeGroup
+            .append('text')
+            .attr('x', cx)
+            .attr('y', cy)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'central')
+            .attr('font-size', '16px')
+            .text(emoji);
+        });
+      }
+
       // Connection handle (only if status is not 'done')
       if (node.stream.status !== 'done' && onCreateChildSlice) {
         const handleRadius = 8;

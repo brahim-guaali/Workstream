@@ -59,6 +59,7 @@ export interface Stream {
   position_y?: number;
   dependencies: string[];
   due_date: string | null;
+  emojis: string[];
 }
 
 export interface StreamEvent {

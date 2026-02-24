@@ -145,6 +145,7 @@ function createCollapsedPlaceholder(
     branched_from_event_id: null,
     dependencies: [],
     due_date: null,
+    emojis: [],
     children: [],
     _collapsed: { count, originalIds },
   };

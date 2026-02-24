@@ -73,6 +73,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
             position_y: data.positionY ?? undefined,
             dependencies: data.dependencies ?? [],
             due_date: data.dueDate?.toDate?.()?.toISOString() || null,
+            emojis: data.emojis ?? [],
           };
         });
         setStreams(streamList);
@@ -102,6 +103,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
         branchedFromEventId: stream.branched_from_event_id,
         dependencies: [],
         dueDate: null,
+        emojis: [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -120,6 +122,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
         branched_from_event_id: stream.branched_from_event_id,
         dependencies: [],
         due_date: null,
+        emojis: [],
       } as Stream;
     },
     [user, resolvedOwnerId]
@@ -143,6 +146,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
       if (updates.position_y !== undefined) updateData.positionY = updates.position_y;
       if (updates.dependencies !== undefined) updateData.dependencies = updates.dependencies;
       if (updates.due_date !== undefined) updateData.dueDate = updates.due_date ? new Date(updates.due_date) : null;
+      if (updates.emojis !== undefined) updateData.emojis = updates.emojis;
 
       await updateDoc(streamRef, updateData);
 
@@ -180,6 +184,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
     position_x?: number;
     position_y?: number;
     dependencies: string[];
+    emojis: string[];
     events: Array<{
       type: string;
       content: string;
@@ -239,6 +244,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
           position_x: stream.position_x,
           position_y: stream.position_y,
           dependencies: stream.dependencies,
+          emojis: stream.emojis ?? [],
           events: streamEventsMap.get(stream.id) || [],
           children: buildExportTree(stream.id),
         }));
@@ -263,6 +269,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
     position_x?: number;
     position_y?: number;
     dependencies?: string[];
+    emojis?: string[];
     events: Array<{
       type: string;
       content: string;
@@ -359,6 +366,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
             parentStreamId,
             branchedFromEventId: null,
             dependencies: stream.dependencies ?? [],
+            emojis: stream.emojis ?? [],
             createdAt: Timestamp.fromDate(new Date(stream.created_at)),
             updatedAt,
             ...(stream.position_x !== undefined && { positionX: stream.position_x }),

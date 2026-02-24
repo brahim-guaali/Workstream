@@ -5,7 +5,7 @@ import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { formatDate, formatDateTime, getRelativeTime } from '../../lib/utils';
-import { statusOptions, sourceTypeOptions, STATUS_CONFIG, SOURCE_TYPE_CONFIG } from '../../lib/streamConfig';
+import { statusOptions, sourceTypeOptions, STATUS_CONFIG, SOURCE_TYPE_CONFIG, EMOJI_TAG_OPTIONS, MAX_EMOJI_TAGS } from '../../lib/streamConfig';
 
 const URL_REGEX = /(https?:\/\/[^\s<]+)/g;
 
@@ -284,7 +284,8 @@ export function StreamDetail({
               <button
                 onClick={onFocusStream}
                 className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
-                title="Focus on this stream"
+                data-tooltip="Focus on this stream"
+                data-tooltip-placement="bottom"
               >
                 <Focus className="w-5 h-5 text-stone-500" />
               </button>
@@ -293,7 +294,8 @@ export function StreamDetail({
               <button
                 onClick={onExitFocus}
                 className="p-1 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors"
-                title="Exit focus"
+                data-tooltip="Exit focus"
+                data-tooltip-placement="bottom"
               >
                 <Focus className="w-5 h-5 text-brand-600 dark:text-brand-400" />
               </button>
@@ -551,6 +553,43 @@ export function StreamDetail({
             </Button>
           </div>
         )}
+
+        {/* Emoji Tags */}
+        <div>
+          <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+            Emoji Tags
+          </h3>
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+            {EMOJI_TAG_OPTIONS.map(({ emoji, label }) => {
+              const active = (stream.emojis ?? []).includes(emoji);
+              const atMax = (stream.emojis ?? []).length >= MAX_EMOJI_TAGS && !active;
+              return (
+                <button
+                  key={emoji}
+                  disabled={isReadOnly || atMax}
+                  onClick={() => {
+                    const current = stream.emojis ?? [];
+                    const next = active
+                      ? current.filter((e) => e !== emoji)
+                      : [...current, emoji];
+                    onUpdateStream({ emojis: next });
+                  }}
+                  className={`text-lg w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-lg transition-colors ${
+                    active
+                      ? 'ring-1.5 ring-brand-500 bg-brand-50 dark:bg-brand-900/30'
+                      : atMax
+                        ? 'opacity-30 cursor-not-allowed'
+                        : 'hover:bg-stone-100 dark:hover:bg-stone-800'
+                  }`}
+                  data-tooltip={label}
+                  data-tooltip-placement="top"
+                >
+                  {emoji}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Add Note */}
         {!isReadOnly && (
