@@ -262,7 +262,29 @@ export async function seedExampleProject(user: User): Promise<void> {
   const projectDoc = await addDoc(projectsRef, {
     name: `Weekend App Hackathon for ${firstName}`,
     description: `${firstName}'s weekend project — from idea to launch in 48 hours!`,
-    metrics: [],
+    metrics: [
+      {
+        id: crypto.randomUUID(),
+        name: 'Features Built',
+        value: 3,
+        initialValue: 0,
+        target: 8,
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Bugs Squashed',
+        value: 5,
+        initialValue: 0,
+        target: 12,
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Coffees Consumed',
+        value: 7,
+        initialValue: 0,
+        target: 10,
+      },
+    ],
     sharedWith: [],
     sharedWithUids: [],
     sharedWithEditorUids: [],
