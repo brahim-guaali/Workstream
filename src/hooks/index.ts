@@ -3,3 +3,4 @@ export { useStreams } from './useStreams';
 export { useEvents } from './useEvents';
 export { useVisualization } from './useVisualization';
 export type { VisualizationConfig, TreeNode, TreeLink } from './useVisualization';
+export { useVoiceControl } from './useVoiceControl';
