@@ -303,6 +303,14 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
 
     // Add animation styles
     const defs = svg.append('defs');
+
+    // Blur filter for due-date glow rects
+    const glowBlur = defs.append('filter')
+      .attr('id', 'glow-blur')
+      .attr('x', '-50%').attr('y', '-50%')
+      .attr('width', '200%').attr('height', '200%');
+    glowBlur.append('feGaussianBlur').attr('in', 'SourceGraphic').attr('stdDeviation', '10');
+
     defs.append('style').text(`
       @keyframes pulse {
         0%, 100% { opacity: 1; }
@@ -607,6 +615,34 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
       const sw = isSelected ? 2 : 1;
       const inset = sw / 2;
 
+      // Compute due date glow status
+      let dueDateColor: string | null = null;
+      if (node.stream.due_date && node.stream.status !== 'done') {
+        const now = new Date();
+        const dueDate = new Date(node.stream.due_date);
+        const diffMs = dueDate.getTime() - now.getTime();
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+        if (diffDays < 0) {
+          dueDateColor = '#EF4444';
+        } else if (diffDays <= 3) {
+          dueDateColor = '#FACC15';
+        }
+      }
+
+      // Glow rect (rendered behind the card background)
+      if (dueDateColor) {
+        nodeGroup
+          .append('rect')
+          .attr('x', -4)
+          .attr('y', -4)
+          .attr('width', node.width + 8)
+          .attr('height', node.height + 8)
+          .attr('rx', 12)
+          .attr('fill', dueDateColor)
+          .attr('opacity', 0.45)
+          .attr('filter', 'url(#glow-blur)');
+      }
+
       // Node background (inset so stroke stays within node bounds)
       nodeGroup
         .append('rect')
@@ -811,6 +847,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
 
       // Dependency tags (bottom-left, compact pills — stop before the type badge)
       const deps = node.stream.dependencies || [];
+      let depEndX = 16; // tracks end X of rendered dependency pills
       if (deps.length > 0) {
         // Generate a stable hue from a string so each dependency name gets a unique color
         const depHue = (s: string) => {
@@ -882,6 +919,26 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
               .text(overflowText);
           }
         }
+        depEndX = depX;
+      }
+
+      // Due date label (bottom-left, after dependency tags)
+      if (node.stream.due_date) {
+        const dueDate = new Date(node.stream.due_date);
+        const dueLabelColor = dueDateColor || '#78716c';
+        const dueLabel = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const dueLabelY = node.height - 14.5;
+        // Position after dependency tags or at default position
+        const dueLabelX = deps.length > 0 ? Math.min(depEndX + 8, node.width - typeBadgeWidth - 50) : 16;
+
+        nodeGroup
+          .append('text')
+          .attr('x', dueLabelX)
+          .attr('y', dueLabelY)
+          .attr('font-size', '9px')
+          .attr('font-weight', '600')
+          .attr('fill', dueLabelColor)
+          .text(dueLabel);
       }
 
       // Tooltip on hover
@@ -889,6 +946,7 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
         node.stream.title,
         node.stream.description || '',
         `Status: ${statusLabels[node.stream.status]} | Type: ${sourceTypeLabels[node.stream.source_type]}`,
+        node.stream.due_date ? `Due: ${new Date(node.stream.due_date).toLocaleDateString()}` : '',
         deps.length > 0 ? `Dependencies: ${deps.join(', ')}` : '',
       ].filter(Boolean).join('\n');
 

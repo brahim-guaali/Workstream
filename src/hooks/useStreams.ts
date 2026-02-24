@@ -72,6 +72,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
             position_x: data.positionX ?? undefined,
             position_y: data.positionY ?? undefined,
             dependencies: data.dependencies ?? [],
+            due_date: data.dueDate?.toDate?.()?.toISOString() || null,
           };
         });
         setStreams(streamList);
@@ -100,6 +101,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
         parentStreamId: stream.parent_stream_id,
         branchedFromEventId: stream.branched_from_event_id,
         dependencies: [],
+        dueDate: null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -117,6 +119,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
         created_by: user.uid,
         branched_from_event_id: stream.branched_from_event_id,
         dependencies: [],
+        due_date: null,
       } as Stream;
     },
     [user, resolvedOwnerId]
@@ -139,6 +142,7 @@ export function useStreams(projectId: string | undefined, ownerId?: string) {
       if (updates.position_x !== undefined) updateData.positionX = updates.position_x;
       if (updates.position_y !== undefined) updateData.positionY = updates.position_y;
       if (updates.dependencies !== undefined) updateData.dependencies = updates.dependencies;
+      if (updates.due_date !== undefined) updateData.dueDate = updates.due_date ? new Date(updates.due_date) : null;
 
       await updateDoc(streamRef, updateData);
 

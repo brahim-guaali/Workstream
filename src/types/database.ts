@@ -58,6 +58,7 @@ export interface Stream {
   position_x?: number;
   position_y?: number;
   dependencies: string[];
+  due_date: string | null;
 }
 
 export interface StreamEvent {

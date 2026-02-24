@@ -4,7 +4,7 @@ import type { Stream, StreamEvent, StreamStatus, SourceType } from '../../types/
 import { Button } from '../ui/Button';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
-import { formatDateTime, getRelativeTime } from '../../lib/utils';
+import { formatDate, formatDateTime, getRelativeTime } from '../../lib/utils';
 import { statusOptions, sourceTypeOptions, STATUS_CONFIG, SOURCE_TYPE_CONFIG } from '../../lib/streamConfig';
 
 const URL_REGEX = /(https?:\/\/[^\s<]+)/g;
@@ -69,6 +69,10 @@ export function StreamDetail({
   const [editedDate, setEditedDate] = useState(
     new Date(stream.created_at).toISOString().slice(0, 16)
   );
+  const [isEditingDueDate, setIsEditingDueDate] = useState(false);
+  const [editedDueDate, setEditedDueDate] = useState(
+    stream.due_date ? new Date(stream.due_date).toISOString().slice(0, 10) : ''
+  );
   const [newDependency, setNewDependency] = useState('');
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState(stream.description || '');
@@ -111,6 +115,23 @@ export function StreamDetail({
   const handleCancelEditDescription = () => {
     setEditedDescription(stream.description || '');
     setIsEditingDescription(false);
+  };
+
+  const handleSaveDueDate = async () => {
+    const newDueDate = editedDueDate ? new Date(editedDueDate).toISOString() : null;
+    await onUpdateStream({ due_date: newDueDate });
+    setIsEditingDueDate(false);
+  };
+
+  const handleCancelEditDueDate = () => {
+    setEditedDueDate(stream.due_date ? new Date(stream.due_date).toISOString().slice(0, 10) : '');
+    setIsEditingDueDate(false);
+  };
+
+  const handleClearDueDate = async () => {
+    await onUpdateStream({ due_date: null });
+    setEditedDueDate('');
+    setIsEditingDueDate(false);
   };
 
   const handleAddDependency = async () => {
@@ -396,6 +417,73 @@ export function StreamDetail({
               className="text-sm text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
             >
               + Add description
+            </button>
+          )}
+        </div>
+
+        {/* Due Date */}
+        <div>
+          <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+            Due Date
+          </h3>
+          {isEditingDueDate && !isReadOnly ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={editedDueDate}
+                onChange={(e) => setEditedDueDate(e.target.value)}
+                className="px-2 py-1 text-sm bg-stone-100 dark:bg-stone-800 border border-stone-300 dark:border-stone-600 rounded-md text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                autoFocus
+              />
+              <button
+                onClick={handleSaveDueDate}
+                className="p-1 rounded-lg hover:bg-green-100 dark:hover:bg-green-900 text-green-600"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleCancelEditDueDate}
+                className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              {stream.due_date && (
+                <button
+                  onClick={handleClearDueDate}
+                  className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 ml-1"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          ) : stream.due_date ? (
+            <div className="flex items-center gap-2 group">
+              <p className="text-sm text-stone-600 dark:text-stone-400">
+                {formatDate(stream.due_date)}
+              </p>
+              {!isReadOnly && (
+                <button
+                  onClick={() => {
+                    setEditedDueDate(stream.due_date ? new Date(stream.due_date).toISOString().slice(0, 10) : '');
+                    setIsEditingDueDate(true);
+                  }}
+                  className="p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Pencil className="w-3 h-3 text-stone-400" />
+                </button>
+              )}
+            </div>
+          ) : isReadOnly ? (
+            <p className="text-sm text-stone-400 dark:text-stone-500">No due date</p>
+          ) : (
+            <button
+              onClick={() => {
+                setEditedDueDate('');
+                setIsEditingDueDate(true);
+              }}
+              className="text-sm text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+            >
+              + Add due date
             </button>
           )}
         </div>
