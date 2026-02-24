@@ -643,6 +643,22 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
           .attr('filter', 'url(#glow-blur)');
       }
 
+      // Due date label (top-left, outside the card box)
+      if (node.stream.due_date) {
+        const dueDate = new Date(node.stream.due_date);
+        const dueLabelColor = dueDateColor || '#78716c';
+        const dueLabel = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+        nodeGroup
+          .append('text')
+          .attr('x', 2)
+          .attr('y', -6)
+          .attr('font-size', '9px')
+          .attr('font-weight', '600')
+          .attr('fill', dueLabelColor)
+          .text(dueLabel);
+      }
+
       // Node background (inset so stroke stays within node bounds)
       nodeGroup
         .append('rect')
@@ -847,7 +863,6 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
 
       // Dependency tags (bottom-left, compact pills — stop before the type badge)
       const deps = node.stream.dependencies || [];
-      let depEndX = 16; // tracks end X of rendered dependency pills
       if (deps.length > 0) {
         // Generate a stable hue from a string so each dependency name gets a unique color
         const depHue = (s: string) => {
@@ -919,26 +934,6 @@ export const StreamTree = forwardRef<StreamTreeHandle, StreamTreeProps>(function
               .text(overflowText);
           }
         }
-        depEndX = depX;
-      }
-
-      // Due date label (bottom-left, after dependency tags)
-      if (node.stream.due_date) {
-        const dueDate = new Date(node.stream.due_date);
-        const dueLabelColor = dueDateColor || '#78716c';
-        const dueLabel = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        const dueLabelY = node.height - 14.5;
-        // Position after dependency tags or at default position
-        const dueLabelX = deps.length > 0 ? Math.min(depEndX + 8, node.width - typeBadgeWidth - 50) : 16;
-
-        nodeGroup
-          .append('text')
-          .attr('x', dueLabelX)
-          .attr('y', dueLabelY)
-          .attr('font-size', '9px')
-          .attr('font-weight', '600')
-          .attr('fill', dueLabelColor)
-          .text(dueLabel);
       }
 
       // Tooltip on hover
