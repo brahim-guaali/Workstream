@@ -17,11 +17,10 @@ export function useSharedProjects() {
 
   useEffect(() => {
     if (!user) {
-      setSharedProjects([]);
-      setLoading(false);
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: set loading before subscribing
     setLoading(true);
     const q = query(
       collection(db, 'shared_projects'),

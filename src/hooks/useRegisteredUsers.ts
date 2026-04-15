@@ -16,8 +16,6 @@ export function useRegisteredUsers(excludeEmails: string[]) {
 
   useEffect(() => {
     if (!user) {
-      setUsers([]);
-      setLoading(false);
       return;
     }
 
