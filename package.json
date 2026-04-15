@@ -1,8 +1,34 @@
 {
   "name": "workstream",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "A visual project tracker that shows how work branches over time",
+  "author": "Brahim Guaali",
+  "license": "MIT",
+  "homepage": "https://github.com/brahim-guaali/Workstream#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brahim-guaali/Workstream.git"
+  },
+  "bugs": {
+    "url": "https://github.com/brahim-guaali/Workstream/issues"
+  },
+  "keywords": [
+    "project-tracker",
+    "workstream",
+    "visualization",
+    "d3",
+    "react",
+    "firebase",
+    "project-management",
+    "stream-tree",
+    "ai-insights",
+    "collaboration"
+  ],
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

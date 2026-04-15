@@ -1,57 +1,73 @@
+<div align="center">
+
 # Workstream
 
-A visual project tracker that shows how work branches over time. Track parallel workstreams, see when and why they diverged, and maintain context across your team.
+**A visual project tracker that shows how work branches over time.**
 
-## Features
+Track parallel workstreams, see when and why they diverged, and maintain context across your team.
 
-- **Visual Stream Tree**: Interactive canvas with drag-and-drop, zoom, and pan navigation
-- **Stream Management**: Create, branch, and track workstreams in a nested hierarchy
-- **Rich Context**: Add notes, change status, and link artifacts to any stream
-- **Project Metrics**: Track key metrics with change percentages and optional targets
-- **Stream Dependencies**: Define dependencies between streams
-- **Source Types**: Categorize streams as task, investigation, meeting, blocker, or discovery
-- **AI Insights**: AI-powered project analysis with TL;DR, progress overview, blockers, metrics trends, and recommendations (Gemini via Firebase AI Logic)
-- **Export Formats**: Export projects as JSON (data backup), Markdown (readable document), or PDF (print)
-- **Import / Export**: Full JSON import/export with metrics, streams, events, and positions preserved
-- **Google Auth**: Sign in with Google via Firebase Authentication
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Firebase](https://img.shields.io/badge/Firebase-11-ffca28?logo=firebase&logoColor=black)](https://firebase.google.com)
+[![Vite](https://img.shields.io/badge/Vite-7-646cff?logo=vite&logoColor=white)](https://vite.dev)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind-4-06b6d4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![D3.js](https://img.shields.io/badge/D3.js-7-f9a03c?logo=d3dotjs&logoColor=white)](https://d3js.org)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
+<br />
 
 https://github.com/user-attachments/assets/37d18491-6b29-4698-9c46-078cf517bcaa
 
+</div>
+
+---
+
+## Features
+
+- **Visual Stream Tree** — Interactive D3-powered canvas with drag-and-drop, zoom, and pan
+- **Stream Branching** — Create, branch, and track workstreams in a nested hierarchy
+- **Rich Context** — Add notes, change status, and link artifacts (PRs, tickets, docs) to any stream
+- **Project Metrics** — Track key metrics with change percentages and optional targets
+- **Stream Dependencies** — Define and visualize dependencies between streams
+- **Source Types** — Categorize streams as task, investigation, meeting, blocker, or discovery
+- **AI Insights** — AI-powered analysis with TL;DR, progress, blockers, metrics trends, and recommendations (Gemini 2.5 Flash via Firebase AI Logic)
+- **Export** — Export projects as JSON, Markdown, or PDF
+- **Import / Export** — Full JSON round-trip with metrics, streams, events, and canvas positions preserved
+- **Real-time Collaboration** — Share projects with role-based access (owner, editor, viewer)
+- **Google Auth** — Sign in with Google via Firebase Authentication
+- **Mobile Responsive** — Fully responsive layout for desktop and mobile
 
 ## Tech Stack
 
-- **Frontend**: React 19, TypeScript, Vite
-- **Styling**: TailwindCSS 4
-- **Visualization**: D3.js
-- **AI**: Firebase AI Logic (Gemini 2.5 Flash)
-- **Backend**: Firebase (Firestore + Auth)
-- **Hosting**: Firebase Hosting
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React 19, TypeScript 5.9, Vite 7 |
+| **Styling** | TailwindCSS 4 |
+| **Visualization** | D3.js 7 |
+| **AI** | Firebase AI Logic (Gemini 2.5 Flash) |
+| **Backend** | Firebase (Firestore + Auth) |
+| **Hosting** | Firebase Hosting |
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 20+
+- [Node.js](https://nodejs.org) 20+
 - A Firebase project with Firestore and Authentication enabled
 
 ### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/brahim-guaali/Workstream.git
+cd Workstream
+
 # Install dependencies
 npm install
 
-# Create .env with your Firebase config
-cat > .env << 'EOF'
-VITE_FIREBASE_API_KEY=your-api-key
-VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-VITE_FIREBASE_APP_ID=your-app-id
-VITE_FIREBASE_MEASUREMENT_ID=your-measurement-id
-VITE_LOGO_URL=/your-logo.svg
-EOF
+# Copy the example env file and fill in your Firebase config
+cp .env.example .env
 
 # Start development server
 npm run dev
@@ -60,7 +76,7 @@ npm run dev
 ### Environment Variables
 
 | Variable | Required | Description |
-|----------|----------|-------------|
+|----------|:--------:|-------------|
 | `VITE_FIREBASE_API_KEY` | Yes | Firebase API key |
 | `VITE_FIREBASE_AUTH_DOMAIN` | Yes | Firebase auth domain |
 | `VITE_FIREBASE_PROJECT_ID` | Yes | Firebase project ID |
@@ -83,27 +99,27 @@ npm run dev
 ```
 src/
 ├── components/
-│   ├── auth/              # SignIn
-│   ├── layout/            # Header, Layout
-│   ├── project/           # ProjectList, ProjectCard
-│   ├── stream/            # StreamDetail, AddStreamModal
-│   ├── visualization/     # StreamTree (D3 canvas)
-│   └── ui/                # Button, Modal, Input, Textarea
-├── contexts/              # AuthContext
-├── hooks/                 # useProjects, useStreams, useEvents, useProjectInsights
-├── lib/                   # firebase.ts, utils.ts, exportDocument.ts
-├── types/                 # database.ts
+│   ├── auth/              # Sign-in flow
+│   ├── layout/            # Header, Layout shell
+│   ├── project/           # Project list, cards, sharing
+│   ├── stream/            # Stream detail panel, modals
+│   ├── visualization/     # D3 stream tree canvas
+│   └── ui/                # Reusable primitives (Button, Modal, Input, etc.)
+├── contexts/              # Auth context provider
+├── hooks/                 # Custom hooks (projects, streams, events, AI insights)
+├── lib/                   # Firebase init, utilities, export logic
+├── types/                 # TypeScript type definitions
 └── pages/                 # HomePage, ProjectPage
 ```
 
-## Available Scripts
+## Scripts
 
-```bash
-npm run dev      # Start development server
-npm run build    # Type-check and build for production
-npm run preview  # Preview production build
-npm run lint     # Run ESLint
-```
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Type-check and build for production |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | Run ESLint |
 
 ## Deployment
 
@@ -112,6 +128,16 @@ npm run build
 firebase deploy --only hosting --project your-project-id
 ```
 
+## Contributing
+
+Contributions are welcome! Please read the [Contributing Guide](CONTRIBUTING.md) before submitting a pull request.
+
 ## License
 
-MIT
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+<div align="center">
+  <sub>Built with React, D3.js, Firebase, and a lot of coffee.</sub>
+</div>
