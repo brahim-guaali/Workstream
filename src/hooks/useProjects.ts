@@ -35,11 +35,10 @@ export function useProject(projectId: string | undefined, ownerId?: string) {
 
   useEffect(() => {
     if (!user || !projectId || !resolvedOwnerId) {
-      setProject(null);
-      setLoading(false);
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: set loading before subscribing
     setLoading(true);
     const projectRef = doc(db, 'users', resolvedOwnerId, 'projects', projectId);
     const unsubscribe = onSnapshot(projectRef, (snap) => {
