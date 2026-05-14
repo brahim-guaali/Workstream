@@ -6,13 +6,15 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
-import { StreamTree } from '../components/visualization/StreamTree';
+import { StreamTree, type StreamTreeHandle } from '../components/visualization/StreamTree';
 import { StreamDetail } from '../components/stream/StreamDetail';
 import { AddStreamModal } from '../components/stream/AddStreamModal';
 import { ShareProjectModal } from '../components/project/ShareProjectModal';
+import { VoiceControlButton } from '../components/voice/VoiceControlButton';
 import { useStreams } from '../hooks/useStreams';
 import { useEvents } from '../hooks/useEvents';
 import { useProject } from '../hooks/useProjects';
+import { useVoiceControl } from '../hooks/useVoiceControl';
 import { buildFocusedTree, metricProgress } from '../lib/utils';
 import confetti from 'canvas-confetti';
 import { statusHexColors, sourceTypeHexColors, STATUS_CONFIG, SOURCE_TYPE_CONFIG, statusLabels } from '../lib/streamConfig';
@@ -34,6 +36,7 @@ export function ProjectPage() {
   const [editDescription, setEditDescription] = useState('');
   const { streams, streamTree, loading, createStream, updateStream, deleteStream, exportProject, importProject, validateImportData } = useStreams(projectId, ownerId);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const streamTreeRef = useRef<StreamTreeHandle>(null);
   const [selectedStream, setSelectedStream] = useState<StreamWithChildren | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [branchFromStreamId, setBranchFromStreamId] = useState<string | null>(null);
@@ -305,6 +308,36 @@ export function ProjectPage() {
     setPendingSlice({ parentId, position });
     setIsAddModalOpen(true);
   }, []);
+
+  const handleUpdateStreamById = useCallback(async (id: string, updates: Partial<StreamWithChildren>) => {
+    await updateStream(id, updates);
+    // Trigger confetti when marking done via voice
+    if (updates.status === 'done') {
+      const stream = streams.find(s => s.id === id);
+      if (stream && stream.status !== 'done') {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      }
+    }
+  }, [updateStream, streams]);
+
+  const voiceControl = useVoiceControl({
+    streams,
+    selectedStream,
+    focusedStreamId,
+    projectName: project?.name || 'Project',
+    projectDescription: project?.description || null,
+    onSelectStream: handleSelectStream,
+    onCreateStream: handleCreateStream,
+    onUpdateStreamById: handleUpdateStreamById,
+    onDeleteStream: handleDeleteStream,
+    onSetSelectedStream: setSelectedStream,
+    onAddNote: handleAddEvent,
+    onBranch: handleBranch,
+    onSearch: (query: string) => setSearchQuery(query),
+    onFocusStream: (id: string) => setFocusedStreamId(id),
+    onExitFocus: () => setFocusedStreamId(null),
+    onResetView: () => streamTreeRef.current?.resetView(),
+  });
 
   const handleOpenAddModal = () => {
     setBranchFromStreamId(null);
@@ -631,6 +664,7 @@ export function ProjectPage() {
         </div>
       ) : (
         <StreamTree
+          ref={streamTreeRef}
           streamTree={displayTree}
           selectedStreamId={selectedStream?.id || null}
           onSelectStream={handleSelectStream}
@@ -642,6 +676,17 @@ export function ProjectPage() {
           highlightedStreamIds={highlightedStreamIds}
           isFullscreen={isCanvasFullscreen}
           onToggleFullscreen={() => setIsCanvasFullscreen(prev => !prev)}
+        />
+      )}
+
+      {!isReadOnly && (
+        <VoiceControlButton
+          state={voiceControl.state}
+          transcript={voiceControl.transcript}
+          toastMessage={voiceControl.toastMessage}
+          errorMessage={voiceControl.errorMessage}
+          isSupported={voiceControl.isSupported}
+          onToggle={voiceControl.toggleListening}
         />
       )}
     </div>
